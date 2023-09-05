@@ -5,11 +5,24 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/nighostchris/everytrack-backend/internal/config"
 	"github.com/nighostchris/everytrack-backend/internal/connections/postgres"
+	"github.com/nighostchris/everytrack-backend/internal/handlers"
 )
+
+type CustomValidator struct {
+	validator *validator.Validate
+}
+
+func (cv *CustomValidator) Validate(i interface{}) error {
+	if error := cv.validator.Struct(i); error != nil {
+		return error
+	}
+	return nil
+}
 
 func main() {
 	// Initialize environment variable configs
@@ -37,17 +50,18 @@ func main() {
 	// Initialize web server
 	e := echo.New()
 	e.HideBanner = true
+	e.Validator = &CustomValidator{validator: validator.New()}
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		// TO FIX: modify it to consume whitelist domains from .env
 		AllowOrigins:     []string{"*"},
 		AllowCredentials: true,
 	}))
 
-	v1 := e.Group("/api/v1")
+	v1 := e.Group("/v1")
 
 	auth := v1.Group("/auth")
-
-	// auth.POST("/login")
+	authHandler := handlers.AuthHandler{Db: db}
+	auth.POST("/login", authHandler.Login)
 	// auth.POST("/signup")
 	// auth.POST("/refresh")
 	// auth.POST("/verify")

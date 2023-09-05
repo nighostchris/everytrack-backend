@@ -6,7 +6,9 @@ import (
 )
 
 type Config struct {
-	DATABASE string `env:"DATABASE"`
+	WebServerHost string `env:"WEB_SERVER_HOST"`
+	WebServerPort int16  `env:"WEB_SERVER_PORT"`
+	Database      string `env:"DATABASE"`
 }
 
 func New() (Config, error) {

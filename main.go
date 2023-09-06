@@ -8,6 +8,7 @@ import (
 	"github.com/nighostchris/everytrack-backend/internal/config"
 	"github.com/nighostchris/everytrack-backend/internal/connections/postgres"
 	"github.com/nighostchris/everytrack-backend/internal/connections/server"
+	"github.com/nighostchris/everytrack-backend/internal/utils"
 )
 
 func main() {
@@ -28,10 +29,10 @@ func main() {
 	}
 
 	// Initialize web server
-	app := server.New()
+	app := server.New(env.DomainWhitelist)
 
 	// Define routes for server
-	auth.NewHandler(db).BindRoutes(app.Group("/v1/auth"))
+	auth.NewHandler(db, &utils.TokenUtils{Env: &env}).BindRoutes(app.Group("/v1/auth"))
 
 	// Start web server
 	if initWebServerError := app.Start(fmt.Sprintf("%s:%d", env.WebServerHost, env.WebServerPort)); initWebServerError != nil {

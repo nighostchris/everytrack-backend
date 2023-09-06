@@ -6,9 +6,15 @@ import (
 )
 
 type Config struct {
-	WebServerHost string `env:"WEB_SERVER_HOST"`
-	WebServerPort int16  `env:"WEB_SERVER_PORT"`
-	Database      string `env:"DATABASE"`
+	// Web Server
+	WebServerHost   string   `env:"WEB_SERVER_HOST"`
+	WebServerPort   int16    `env:"WEB_SERVER_PORT"`
+	DomainWhitelist []string `env:"DOMAIN_WHITELIST"`
+	// Postgres
+	Database string `env:"DATABASE"`
+	// Authentication Token
+	TokenExpiryInHour int    `env:"TOKEN_EXPIRY_IN_HOUR"`
+	AccessTokenSecret string `env:"ACCESS_TOKEN_SECRET"`
 }
 
 func New() (Config, error) {

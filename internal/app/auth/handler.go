@@ -7,16 +7,17 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/golang-jwt/jwt"
 	"github.com/iancoleman/strcase"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/nighostchris/everytrack-backend/internal/database"
+	"github.com/nighostchris/everytrack-backend/internal/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthHandler struct {
-	Db *pgxpool.Pool
+	Db         *pgxpool.Pool
+	TokenUtils *utils.TokenUtils
 }
 
 type SignupRequestBody struct {
@@ -30,8 +31,8 @@ type LoginRequestBody struct {
 	Password string `json:"password" validate:"required"`
 }
 
-func NewHandler(db *pgxpool.Pool) *AuthHandler {
-	handler := AuthHandler{Db: db}
+func NewHandler(db *pgxpool.Pool, tu *utils.TokenUtils) *AuthHandler {
+	handler := AuthHandler{Db: db, TokenUtils: tu}
 	return &handler
 }
 
@@ -78,25 +79,17 @@ func (ah *AuthHandler) Signup(c echo.Context) error {
 	}
 
 	// Construct access token
-	expiryTime := time.Now().Add(time.Hour * time.Duration(24))
+	token, generateTokenError := ah.TokenUtils.GenerateToken(newClientId, 0)
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"iss": "everytrack-backend",
-		"sub": newClientId,
-		"exp": expiryTime.Unix(),
-	})
-
-	signedToken, signError := token.SignedString([]byte("to-be-replace-by-secret-later"))
-
-	if signError != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{"success": false, "error": signError.Error()})
+	if generateTokenError != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{"success": false, "error": generateTokenError.Error()})
 	}
 
 	// Set access token into cookie
 	c.SetCookie(&http.Cookie{
 		Name:     "token",
-		Value:    signedToken,
-		Expires:  expiryTime,
+		Value:    token,
+		Expires:  time.Now(),
 		Path:     "/",
 		Domain:   "localhost",
 		Secure:   true,                  // Forbid cookie from transmitting over simple HTTP
@@ -138,25 +131,17 @@ func (ah *AuthHandler) Login(c echo.Context) error {
 	}
 
 	// Construct access token
-	expiryTime := time.Now().Add(time.Hour * time.Duration(24))
+	token, generateTokenError := ah.TokenUtils.GenerateToken(client.Id, 0)
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"iss": "everytrack-backend",
-		"sub": client.Id,
-		"exp": expiryTime.Unix(),
-	})
-
-	signedToken, signError := token.SignedString([]byte("to-be-replace-by-secret-later"))
-
-	if signError != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{"success": false, "error": signError.Error()})
+	if generateTokenError != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{"success": false, "error": generateTokenError.Error()})
 	}
 
 	// Set access token into cookie
 	c.SetCookie(&http.Cookie{
 		Name:     "token",
-		Value:    signedToken,
-		Expires:  expiryTime,
+		Value:    token,
+		Expires:  time.Now(),
 		Path:     "/",
 		Domain:   "localhost",
 		Secure:   true,                  // Forbid cookie from transmitting over simple HTTP

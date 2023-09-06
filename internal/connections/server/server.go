@@ -17,7 +17,7 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 	return nil
 }
 
-func New() *echo.Echo {
+func New(domainWhitelist []string) *echo.Echo {
 	e := echo.New()
 	// Hiding framework promotional banner
 	e.HideBanner = true
@@ -25,8 +25,7 @@ func New() *echo.Echo {
 	e.Validator = &CustomValidator{validator: validator.New()}
 	// CORS setting
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		// TO FIX: modify it to consume whitelist domains from .env later
-		AllowOrigins:     []string{"*"},
+		AllowOrigins:     domainWhitelist,
 		AllowCredentials: true,
 	}))
 

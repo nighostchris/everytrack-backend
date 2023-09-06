@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 
@@ -28,17 +27,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	dbPingError := db.Ping(context.Background())
-
-	if dbPingError != nil {
-		fmt.Println(dbPingError.Error())
-	}
-
 	// Initialize web server
 	app := server.New()
 
 	// Define routes for server
-	auth.New(db).BindRoutes(app.Group("/v1/auth"))
+	auth.NewHandler(db).BindRoutes(app.Group("/v1/auth"))
 
 	// Start web server
 	if initWebServerError := app.Start(fmt.Sprintf("%s:%d", env.WebServerHost, env.WebServerPort)); initWebServerError != nil {

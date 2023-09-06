@@ -19,19 +19,25 @@ type AuthHandler struct {
 	Db *pgxpool.Pool
 }
 
+type SignupRequestBody struct {
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
+}
+
 type LoginRequestBody struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`
 }
 
-func New(db *pgxpool.Pool) *AuthHandler {
+func NewHandler(db *pgxpool.Pool) *AuthHandler {
 	handler := AuthHandler{Db: db}
 	return &handler
 }
 
-func (ah *AuthHandler) Login(c echo.Context) error {
-	data := new(LoginRequestBody)
+func (ah *AuthHandler) Signup(c echo.Context) error {
+	data := new(SignupRequestBody)
 
+	// Retrieve request body and validate with schema
 	if bindError := c.Bind(data); bindError != nil {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{"success": false, "error": "Missing required fields."})
 	}
@@ -39,23 +45,46 @@ func (ah *AuthHandler) Login(c echo.Context) error {
 	if validateError := c.Validate(data); validateError != nil {
 		var ve validator.ValidationErrors
 		if errors.As(validateError, &ve) {
-			return c.JSON(http.StatusBadRequest, map[string]interface{}{"success": false, "error": fmt.Sprintf("Invalid field %s", strcase.ToLowerCamel(ve[0].Field()))})
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{"success": false, "error": fmt.Sprintf("Invalid field %s.", strcase.ToLowerCamel(ve[0].Field()))})
 		}
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{"success": false, "error": validateError.Error()})
 	}
 
+	// Check if client exists already in database
+	return c.JSON(http.StatusOK, map[string]interface{}{"success": true})
+}
+
+func (ah *AuthHandler) Login(c echo.Context) error {
+	data := new(LoginRequestBody)
+
+	// Retrieve request body and validate with schema
+	if bindError := c.Bind(data); bindError != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{"success": false, "error": "Missing required fields."})
+	}
+
+	if validateError := c.Validate(data); validateError != nil {
+		var ve validator.ValidationErrors
+		if errors.As(validateError, &ve) {
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{"success": false, "error": fmt.Sprintf("Invalid field %s.", strcase.ToLowerCamel(ve[0].Field()))})
+		}
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{"success": false, "error": validateError.Error()})
+	}
+
+	// Try to get client from database by input email
 	client, getClientError := database.GetClientByEmail(ah.Db, data.Email)
 
 	if getClientError != nil {
 		return c.JSON(http.StatusNotFound, map[string]interface{}{"success": false, "error": getClientError.Error()})
 	}
 
+	// Verify password
 	verifyPasswordError := bcrypt.CompareHashAndPassword([]byte(client.Password), []byte(data.Password))
 
 	if verifyPasswordError != nil {
 		return c.JSON(http.StatusNotFound, map[string]interface{}{"success": false, "error": verifyPasswordError.Error()})
 	}
 
+	// Construct access token
 	expiryTime := time.Now().Add(time.Hour * time.Duration(24))
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -70,6 +99,7 @@ func (ah *AuthHandler) Login(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]interface{}{"success": false, "error": signError.Error()})
 	}
 
+	// Set access token into cookie
 	c.SetCookie(&http.Cookie{
 		Name:     "token",
 		Value:    signedToken,

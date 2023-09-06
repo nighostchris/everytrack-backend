@@ -32,6 +32,12 @@ export PATH=$PATH:$HOME/go/bin
 
 # Create new migration file
 migrate create -ext sql -dir ./migrations -seq <migration_file_name>
+
+# Run migration
+migrate -path ./migrations -database "postgresql://everytrack:everytrack@127.0.0.1:5432/everytrack?sslmode=disable" up
+
+# Rollback migration
+migrate -path ./migrations -database "postgresql://everytrack:everytrack@127.0.0.1:5432/everytrack?sslmode=disable" down -all
 ```
 
 ## Useful Commands

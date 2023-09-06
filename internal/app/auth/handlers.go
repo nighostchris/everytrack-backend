@@ -1,4 +1,4 @@
-package handlers
+package auth
 
 import (
 	"errors"
@@ -22,6 +22,11 @@ type AuthHandler struct {
 type LoginRequestBody struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`
+}
+
+func New(db *pgxpool.Pool) *AuthHandler {
+	handler := AuthHandler{Db: db}
+	return &handler
 }
 
 func (ah *AuthHandler) Login(c echo.Context) error {

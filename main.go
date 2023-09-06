@@ -5,24 +5,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/go-playground/validator/v10"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"github.com/nighostchris/everytrack-backend/internal/app/auth"
 	"github.com/nighostchris/everytrack-backend/internal/config"
 	"github.com/nighostchris/everytrack-backend/internal/connections/postgres"
-	"github.com/nighostchris/everytrack-backend/internal/handlers"
+	"github.com/nighostchris/everytrack-backend/internal/connections/server"
 )
-
-type CustomValidator struct {
-	validator *validator.Validate
-}
-
-func (cv *CustomValidator) Validate(i interface{}) error {
-	if error := cv.validator.Struct(i); error != nil {
-		return error
-	}
-	return nil
-}
 
 func main() {
 	// Initialize environment variable configs
@@ -48,25 +35,13 @@ func main() {
 	}
 
 	// Initialize web server
-	e := echo.New()
-	e.HideBanner = true
-	e.Validator = &CustomValidator{validator: validator.New()}
-	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		// TO FIX: modify it to consume whitelist domains from .env
-		AllowOrigins:     []string{"*"},
-		AllowCredentials: true,
-	}))
+	app := server.New()
 
-	v1 := e.Group("/v1")
+	// Define routes for server
+	auth.New(db).BindRoutes(app.Group("/v1/auth"))
 
-	auth := v1.Group("/auth")
-	authHandler := handlers.AuthHandler{Db: db}
-	auth.POST("/login", authHandler.Login)
-	// auth.POST("/signup")
-	// auth.POST("/refresh")
-	// auth.POST("/verify")
-
-	if initWebServerError := e.Start(fmt.Sprintf("%s:%d", env.WebServerHost, env.WebServerPort)); initWebServerError != nil {
+	// Start web server
+	if initWebServerError := app.Start(fmt.Sprintf("%s:%d", env.WebServerHost, env.WebServerPort)); initWebServerError != nil {
 		fmt.Println(initWebServerError.Error())
 		os.Exit(1)
 	}

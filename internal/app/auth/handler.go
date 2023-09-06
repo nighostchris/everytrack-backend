@@ -21,6 +21,7 @@ type AuthHandler struct {
 
 type SignupRequestBody struct {
 	Email    string `json:"email" validate:"required,email"`
+	Username string `json:"username" validate:"required,max=20"`
 	Password string `json:"password" validate:"required"`
 }
 
@@ -51,6 +52,58 @@ func (ah *AuthHandler) Signup(c echo.Context) error {
 	}
 
 	// Check if client exists already in database
+	_, getClientError := database.GetClientByEmail(ah.Db, data.Email)
+
+	if getClientError == nil {
+		return c.JSON(http.StatusNotFound, map[string]interface{}{"success": false, "error": "Username already in use."})
+	}
+
+	passwordHash, generatePasswordHashError := bcrypt.GenerateFromPassword([]byte(data.Password), bcrypt.DefaultCost)
+
+	if generatePasswordHashError != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{"success": false, "error": "Internal server error."})
+	}
+
+	newClientId, createNewClientError := database.CreateNewClient(
+		ah.Db,
+		database.CreateNewClientParams{
+			Email:    data.Email,
+			Username: data.Username,
+			Password: string(passwordHash),
+		},
+	)
+
+	if createNewClientError != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{"success": false, "error": "Internal server error."})
+	}
+
+	// Construct access token
+	expiryTime := time.Now().Add(time.Hour * time.Duration(24))
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"iss": "everytrack-backend",
+		"sub": newClientId,
+		"exp": expiryTime.Unix(),
+	})
+
+	signedToken, signError := token.SignedString([]byte("to-be-replace-by-secret-later"))
+
+	if signError != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{"success": false, "error": signError.Error()})
+	}
+
+	// Set access token into cookie
+	c.SetCookie(&http.Cookie{
+		Name:     "token",
+		Value:    signedToken,
+		Expires:  expiryTime,
+		Path:     "/",
+		Domain:   "localhost",
+		Secure:   true,                  // Forbid cookie from transmitting over simple HTTP
+		HttpOnly: true,                  // Blocks access of related cookie from client side
+		SameSite: http.SameSiteNoneMode, // SameSite 'none' has to be used together with secure - true
+	})
+
 	return c.JSON(http.StatusOK, map[string]interface{}{"success": true})
 }
 
@@ -93,7 +146,7 @@ func (ah *AuthHandler) Login(c echo.Context) error {
 		"exp": expiryTime.Unix(),
 	})
 
-	signedToken, signError := token.SignedString("to-be-replace-by-secret-later")
+	signedToken, signError := token.SignedString([]byte("to-be-replace-by-secret-later"))
 
 	if signError != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]interface{}{"success": false, "error": signError.Error()})

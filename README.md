@@ -3,6 +3,7 @@
 - [Local Environment Setup](#local-environment-setup)
   - [Postgres](#postgres)
   - [Migration](#migration)
+  - [Hot Reload](#hot-reload)
 - [Useful Commands](#useful-commands)
   - [pgcli](#pgcli)
   - [iredis](#iredis)
@@ -38,6 +39,15 @@ migrate -path ./migrations -database "postgresql://everytrack:everytrack@127.0.0
 
 # Rollback migration
 migrate -path ./migrations -database "postgresql://everytrack:everytrack@127.0.0.1:5432/everytrack?sslmode=disable" down -all
+```
+
+### Hot Reload
+
+```bash
+go install github.com/cosmtrek/air@latest
+
+# Run the server
+air
 ```
 
 ## Useful Commands

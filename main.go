@@ -20,14 +20,19 @@ func main() {
 	// Establish database connection
 	db := postgres.New(env.Database)
 	// Initialize web server
-	app := server.New(env.DomainWhitelist)
+	app := server.New(env.DomainWhitelist, zapLogger)
 
 	// Define routes for server
-	auth.NewHandler(db, &utils.TokenUtils{Env: env, Logger: zapLogger}).BindRoutes(app.Group("/v1/auth"))
+	auth.NewHandler(
+		db,
+		&utils.TokenUtils{Env: env, Logger: zapLogger},
+		zapLogger,
+	).BindRoutes(app.Group("/v1/auth"))
 
 	// Start web server
 	if initWebServerError := app.Start(fmt.Sprintf("%s:%d", env.WebServerHost, env.WebServerPort)); initWebServerError != nil {
-		fmt.Println(initWebServerError.Error())
+		zapLogger.Error(initWebServerError.Error())
 		os.Exit(1)
 	}
+	zapLogger.Info(fmt.Sprintf("web server listening on %s:%d", env.WebServerHost, env.WebServerPort))
 }

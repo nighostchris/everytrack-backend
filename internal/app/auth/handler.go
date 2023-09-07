@@ -12,11 +12,13 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/nighostchris/everytrack-backend/internal/database"
 	"github.com/nighostchris/everytrack-backend/internal/utils"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthHandler struct {
 	Db         *pgxpool.Pool
+	Logger     *zap.Logger
 	TokenUtils *utils.TokenUtils
 }
 
@@ -31,8 +33,8 @@ type LoginRequestBody struct {
 	Password string `json:"password" validate:"required"`
 }
 
-func NewHandler(db *pgxpool.Pool, tu *utils.TokenUtils) *AuthHandler {
-	handler := AuthHandler{Db: db, TokenUtils: tu}
+func NewHandler(db *pgxpool.Pool, tu *utils.TokenUtils, l *zap.Logger) *AuthHandler {
+	handler := AuthHandler{Db: db, Logger: l, TokenUtils: tu}
 	return &handler
 }
 
@@ -150,4 +152,8 @@ func (ah *AuthHandler) Login(c echo.Context) error {
 	})
 
 	return c.JSON(http.StatusOK, map[string]interface{}{"success": true})
+}
+
+func (ah *AuthHandler) Verify(c echo.Context) error {
+	return c.JSON(http.StatusAccepted, map[string]interface{}{"success": true})
 }

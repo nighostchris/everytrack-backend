@@ -21,6 +21,7 @@ type CustomClaims struct {
 
 func (tu TokenUtils) GenerateToken(sub string, tokenType int) (string, error) {
 	tu.Logger.Info(fmt.Sprintf("starts generating token of type %d for %s", tokenType, sub))
+
 	// Define which secret key to sign token
 	var secret []byte
 	if tokenType == 0 {
@@ -48,4 +49,32 @@ func (tu TokenUtils) GenerateToken(sub string, tokenType int) (string, error) {
 	}
 
 	return signedJwt, nil
+}
+
+func (tu TokenUtils) VerifyToken(token string) (bool, string) {
+	tu.Logger.Info(fmt.Sprintf("starts verifying token %s", token))
+
+	t, parseTokenError := jwt.ParseWithClaims(token, &CustomClaims{}, func(tk *jwt.Token) (interface{}, error) {
+		if _, isValidSigningMethod := tk.Method.(*jwt.SigningMethodHMAC); !isValidSigningMethod {
+			return nil, fmt.Errorf("unexpected signing method %s", tk.Header["alg"])
+		}
+		return tu.Env.AccessTokenSecret, nil
+	})
+
+	if parseTokenError != nil || t.Valid {
+		tu.Logger.Error(fmt.Sprintf("invalid token %s", token))
+		return false, ""
+	}
+
+	claim := t.Claims.(*CustomClaims)
+	tu.Logger.Info(fmt.Sprintf("claim in token %s - %#v", token, claim))
+
+	currentTime := time.Now().Unix()
+	if claim.ExpiresAt.Time.Unix() <= currentTime {
+		tu.Logger.Error("token expired")
+		return false, ""
+	}
+	sub := claim.Subject
+
+	return true, sub
 }

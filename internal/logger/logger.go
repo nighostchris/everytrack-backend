@@ -36,6 +36,7 @@ func New(logLevel string) *zap.Logger {
 	encoderConfig.TimeKey = "timestamp"
 	encoderConfig.EncodeTime = zapcore.RFC3339NanoTimeEncoder
 	encoderConfig.CallerKey = ""
+	encoderConfig.StacktraceKey = ""
 	encoderConfig.MessageKey = "message"
 	encoderConfig.FunctionKey = "function"
 	config.EncoderConfig = encoderConfig

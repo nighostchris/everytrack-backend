@@ -4,6 +4,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"go.uber.org/zap"
 )
 
 type CustomValidator struct {
@@ -17,7 +18,9 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 	return nil
 }
 
-func New(domainWhitelist []string) *echo.Echo {
+func New(domainWhitelist []string, logger *zap.Logger) *echo.Echo {
+	logger.Info("initializing web server")
+
 	e := echo.New()
 	// Hiding framework promotional banner
 	e.HideBanner = true
@@ -28,6 +31,9 @@ func New(domainWhitelist []string) *echo.Echo {
 		AllowOrigins:     domainWhitelist,
 		AllowCredentials: true,
 	}))
+	// Logger setting
+	logMiddleware := LogMiddleware{Logger: logger}
+	e.Use(logMiddleware.New)
 
 	return e
 }

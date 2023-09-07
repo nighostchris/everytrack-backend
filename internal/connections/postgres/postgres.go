@@ -10,7 +10,7 @@ import (
 )
 
 func New(connString string) *pgxpool.Pool {
-	logTemplate := "{\"level\":\"%s\",\"timestamp\":\"%s\",\"function\":\"github.com/nighostchris/everytrack-backend/internal/postgres.New\",\"message\":\"%s\"}\n"
+	logTemplate := "{\"level\":\"%s\",\"timestamp\":\"%s\",\"function\":\"github.com/nighostchris/everytrack-backend/internal/connections/postgres.New\",\"message\":\"%s\"}\n"
 	fmt.Printf(logTemplate, "info", time.Now().Format(time.RFC3339Nano), "initializing database connection")
 
 	// https://pkg.go.dev/github.com/jackc/pgx/v5#ParseConfig

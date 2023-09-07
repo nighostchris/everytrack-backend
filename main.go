@@ -8,31 +8,22 @@ import (
 	"github.com/nighostchris/everytrack-backend/internal/config"
 	"github.com/nighostchris/everytrack-backend/internal/connections/postgres"
 	"github.com/nighostchris/everytrack-backend/internal/connections/server"
+	"github.com/nighostchris/everytrack-backend/internal/logger"
 	"github.com/nighostchris/everytrack-backend/internal/utils"
 )
 
 func main() {
 	// Initialize environment variable configs
-	env, initConfigError := config.New()
-
-	if initConfigError != nil {
-		fmt.Println(initConfigError.Error())
-		os.Exit(1)
-	}
-
+	env := config.New()
+	// Initialize logger
+	zapLogger := logger.New(env.LogLevel)
 	// Establish database connection
-	db, initPgError := postgres.New(env.Database)
-
-	if initPgError != nil {
-		fmt.Println(initPgError.Error())
-		os.Exit(1)
-	}
-
+	db := postgres.New(env.Database)
 	// Initialize web server
 	app := server.New(env.DomainWhitelist)
 
 	// Define routes for server
-	auth.NewHandler(db, &utils.TokenUtils{Env: &env}).BindRoutes(app.Group("/v1/auth"))
+	auth.NewHandler(db, &utils.TokenUtils{Env: env, Logger: zapLogger}).BindRoutes(app.Group("/v1/auth"))
 
 	// Start web server
 	if initWebServerError := app.Start(fmt.Sprintf("%s:%d", env.WebServerHost, env.WebServerPort)); initWebServerError != nil {

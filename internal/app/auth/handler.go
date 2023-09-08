@@ -4,12 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/iancoleman/strcase"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
+	"github.com/nighostchris/everytrack-backend/internal/config"
 	"github.com/nighostchris/everytrack-backend/internal/database"
 	"github.com/nighostchris/everytrack-backend/internal/utils"
 	"go.uber.org/zap"
@@ -33,8 +33,9 @@ type LoginRequestBody struct {
 	Password string `json:"password" validate:"required"`
 }
 
-func NewHandler(db *pgxpool.Pool, tu *utils.TokenUtils, l *zap.Logger) *AuthHandler {
-	handler := AuthHandler{Db: db, Logger: l, TokenUtils: tu}
+func NewHandler(db *pgxpool.Pool, env *config.Config, l *zap.Logger) *AuthHandler {
+	tokenUtils := utils.TokenUtils{Env: env, Logger: l}
+	handler := AuthHandler{Db: db, Logger: l, TokenUtils: &tokenUtils}
 	return &handler
 }
 
@@ -91,9 +92,8 @@ func (ah *AuthHandler) Signup(c echo.Context) error {
 	c.SetCookie(&http.Cookie{
 		Name:     "token",
 		Value:    token,
-		Expires:  time.Now(),
+		Expires:  ah.TokenUtils.GetTokenExpiry(),
 		Path:     "/",
-		Domain:   "localhost",
 		Secure:   true,                  // Forbid cookie from transmitting over simple HTTP
 		HttpOnly: true,                  // Blocks access of related cookie from client side
 		SameSite: http.SameSiteNoneMode, // SameSite 'none' has to be used together with secure - true
@@ -104,52 +104,58 @@ func (ah *AuthHandler) Signup(c echo.Context) error {
 
 func (ah *AuthHandler) Login(c echo.Context) error {
 	data := new(LoginRequestBody)
+	ah.Logger.Info("starts")
 
 	// Retrieve request body and validate with schema
 	if bindError := c.Bind(data); bindError != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{"success": false, "error": "Missing required fields."})
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{"success": false, "error": "Missing required fields"})
 	}
 
 	if validateError := c.Validate(data); validateError != nil {
 		var ve validator.ValidationErrors
 		if errors.As(validateError, &ve) {
-			return c.JSON(http.StatusBadRequest, map[string]interface{}{"success": false, "error": fmt.Sprintf("Invalid field %s.", strcase.ToLowerCamel(ve[0].Field()))})
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{"success": false, "error": fmt.Sprintf("Invalid field %s", strcase.ToLowerCamel(ve[0].Field()))})
 		}
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{"success": false, "error": validateError.Error()})
+		ah.Logger.Error(fmt.Sprintf("invalid field. %s", validateError.Error()))
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{"success": false, "error": "Invalid field"})
 	}
+	ah.Logger.Debug("validated request parameters")
 
 	// Try to get client from database by input email
 	client, getClientError := database.GetClientByEmail(ah.Db, data.Email)
-
 	if getClientError != nil {
-		return c.JSON(http.StatusNotFound, map[string]interface{}{"success": false, "error": getClientError.Error()})
+		ah.Logger.Error(fmt.Sprintf("failed to get client from database by email - %s. %s", data.Email, getClientError.Error()))
+		return c.JSON(http.StatusNotFound, map[string]interface{}{"success": false, "error": "Invalid user"})
 	}
+	ah.Logger.Debug(fmt.Sprintf("got client from database with email - %s", client.Email))
 
 	// Verify password
 	verifyPasswordError := bcrypt.CompareHashAndPassword([]byte(client.Password), []byte(data.Password))
-
 	if verifyPasswordError != nil {
-		return c.JSON(http.StatusNotFound, map[string]interface{}{"success": false, "error": verifyPasswordError.Error()})
+		ah.Logger.Error(fmt.Sprintf("password verification failed. %s", verifyPasswordError.Error()))
+		return c.JSON(http.StatusNotFound, map[string]interface{}{"success": false, "error": "Incorrect password"})
 	}
+	ah.Logger.Debug("verified password")
 
 	// Construct access token
 	token, generateTokenError := ah.TokenUtils.GenerateToken(client.Id, 0)
-
 	if generateTokenError != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{"success": false, "error": generateTokenError.Error()})
+		ah.Logger.Error(fmt.Sprintf("access token generation failed. %s", generateTokenError.Error()))
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{"success": false, "error": "Internal server error"})
 	}
+	ah.Logger.Debug("generated acccess token")
 
 	// Set access token into cookie
 	c.SetCookie(&http.Cookie{
 		Name:     "token",
 		Value:    token,
-		Expires:  time.Now(),
+		Expires:  ah.TokenUtils.GetTokenExpiry(),
 		Path:     "/",
-		Domain:   "localhost",
 		Secure:   true,                  // Forbid cookie from transmitting over simple HTTP
 		HttpOnly: true,                  // Blocks access of related cookie from client side
 		SameSite: http.SameSiteNoneMode, // SameSite 'none' has to be used together with secure - true
 	})
+	ah.Logger.Debug("finished setting access token to response cookie")
 
 	return c.JSON(http.StatusOK, map[string]interface{}{"success": true})
 }

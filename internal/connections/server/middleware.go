@@ -1,7 +1,9 @@
 package server
 
 import (
+	"io"
 	"net/http"
+	"regexp"
 
 	"github.com/labstack/echo/v4"
 	"github.com/nighostchris/everytrack-backend/internal/utils"
@@ -42,10 +44,19 @@ func (am *AuthMiddleware) New(next echo.HandlerFunc) echo.HandlerFunc {
 
 func (lm *LogMiddleware) New(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
+		var data string = ""
+		if c.Request().Header.Get("Content-Type") == echo.MIMEApplicationJSON {
+			rawBody, _ := io.ReadAll(c.Request().Body)
+			regexExpression := "\\s|\n|\t"
+			regex := regexp.MustCompile(regexExpression)
+			data = regex.ReplaceAllString(string(rawBody), "")
+		}
+
 		lm.Logger.Info(
 			"incoming request",
 			zap.String("method", c.Request().Method),
 			zap.String("path", c.Request().RequestURI),
+			zap.String("data", data),
 		)
 
 		next(c)

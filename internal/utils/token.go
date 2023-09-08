@@ -19,6 +19,10 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
+func (tu TokenUtils) GetTokenExpiry() time.Time {
+	return time.Now().Add(time.Hour * time.Duration(tu.Env.TokenExpiryInHour))
+}
+
 func (tu TokenUtils) GenerateToken(sub string, tokenType int) (string, error) {
 	tu.Logger.Info(fmt.Sprintf("starts generating token of type %d for %s", tokenType, sub))
 
@@ -58,10 +62,10 @@ func (tu TokenUtils) VerifyToken(token string) (bool, string) {
 		if _, isValidSigningMethod := tk.Method.(*jwt.SigningMethodHMAC); !isValidSigningMethod {
 			return nil, fmt.Errorf("unexpected signing method %s", tk.Header["alg"])
 		}
-		return tu.Env.AccessTokenSecret, nil
+		return []byte(tu.Env.AccessTokenSecret), nil
 	})
 
-	if parseTokenError != nil || t.Valid {
+	if parseTokenError != nil || !t.Valid {
 		tu.Logger.Error(fmt.Sprintf("invalid token %s", token))
 		return false, ""
 	}

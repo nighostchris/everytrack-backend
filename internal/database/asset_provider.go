@@ -16,9 +16,8 @@ func GetAllBankDetails(db *pgxpool.Pool) ([]BankDetail, error) {
 	var bankDetails []BankDetail
 	query := `SELECT ap.name, apat.id as account_type_id, apat.name as account_type_name
 	FROM everytrack_backend.asset_provider AS ap
-	INNER JOIN everytrack_backend.asset_provider_account_type AS apat
-	ON ap.id = apat.asset_provider_id
-	WHERE ap.type = 'bank'`
+	INNER JOIN everytrack_backend.asset_provider_account_type AS apat ON ap.id = apat.asset_provider_id
+	WHERE ap.type = 'bank';`
 	rows, queryError := db.Query(context.Background(), query)
 	if queryError != nil {
 		return []BankDetail{}, queryError

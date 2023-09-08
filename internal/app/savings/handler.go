@@ -6,13 +6,15 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
+	"github.com/nighostchris/everytrack-backend/internal/connections/server"
 	"github.com/nighostchris/everytrack-backend/internal/database"
 	"go.uber.org/zap"
 )
 
 type SavingsHandler struct {
-	Db     *pgxpool.Pool
-	Logger *zap.Logger
+	Db             *pgxpool.Pool
+	Logger         *zap.Logger
+	AuthMiddleware *server.AuthMiddleware
 }
 
 type AccountType struct {
@@ -25,8 +27,8 @@ type GetAllBankDetailsResponseData struct {
 	AccountType []AccountType
 }
 
-func NewHandler(db *pgxpool.Pool, l *zap.Logger) *SavingsHandler {
-	handler := SavingsHandler{Db: db, Logger: l}
+func NewHandler(db *pgxpool.Pool, l *zap.Logger, am *server.AuthMiddleware) *SavingsHandler {
+	handler := SavingsHandler{Db: db, Logger: l, AuthMiddleware: am}
 	return &handler
 }
 

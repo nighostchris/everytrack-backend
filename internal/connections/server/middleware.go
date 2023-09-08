@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"io"
 	"net/http"
 	"regexp"
@@ -50,6 +51,7 @@ func (lm *LogMiddleware) New(next echo.HandlerFunc) echo.HandlerFunc {
 			regexExpression := "\\s|\n|\t"
 			regex := regexp.MustCompile(regexExpression)
 			data = regex.ReplaceAllString(string(rawBody), "")
+			c.Request().Body = io.NopCloser(bytes.NewBuffer(rawBody))
 		}
 
 		lm.Logger.Info(

@@ -10,6 +10,7 @@ import (
 	"github.com/nighostchris/everytrack-backend/internal/connections/postgres"
 	"github.com/nighostchris/everytrack-backend/internal/connections/server"
 	"github.com/nighostchris/everytrack-backend/internal/logger"
+	"github.com/nighostchris/everytrack-backend/internal/utils"
 )
 
 func main() {
@@ -21,10 +22,12 @@ func main() {
 	db := postgres.New(env.Database)
 	// Initialize web server
 	app := server.New(env.DomainWhitelist, zapLogger)
+	// Initialize auth middleware
+	authMiddleware := server.AuthMiddleware{Logger: zapLogger, TokenUtils: &utils.TokenUtils{Env: env, Logger: zapLogger}}
 
 	// Define routes for server
-	auth.NewHandler(db, env, zapLogger).BindRoutes(app.Group("/v1/auth"))
-	savings.NewHandler(db, zapLogger).BindRoutes(app.Group("/v1/savings"))
+	auth.NewHandler(db, env, zapLogger, &authMiddleware).BindRoutes(app.Group("/v1/auth"))
+	savings.NewHandler(db, zapLogger, &authMiddleware).BindRoutes(app.Group("/v1/savings"))
 
 	// Start web server
 	if initWebServerError := app.Start(fmt.Sprintf("%s:%d", env.WebServerHost, env.WebServerPort)); initWebServerError != nil {

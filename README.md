@@ -41,6 +41,18 @@ migrate -path ./migrations -database "postgresql://everytrack:everytrack@127.0.0
 migrate -path ./migrations -database "postgresql://everytrack:everytrack@127.0.0.1:5432/everytrack?sslmode=disable" down -all
 ```
 
+### Seeding
+
+```bash
+npm ci
+
+# Create new seed file
+npx knex seed:make <name>
+
+# Run seed files
+npx knex seed:run
+```
+
 ### Hot Reload
 
 ```bash

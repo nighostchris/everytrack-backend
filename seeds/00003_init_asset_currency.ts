@@ -6,8 +6,8 @@ const schema = "everytrack_backend";
 export async function seed(knex: Knex): Promise<void> {
   await knex(`${schema}.${table}`).del();
   await knex(`${schema}.${table}`).insert([
-    { name: "HKD", symbol: "HKD$" },
-    { name: "USD", symbol: "USD$" },
-    { name: "GBP", symbol: "£" },
+    { ticker: "HKD", symbol: "HKD$" },
+    { ticker: "USD", symbol: "USD$" },
+    { ticker: "GBP", symbol: "£" },
   ]);
 }

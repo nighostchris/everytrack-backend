@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS everytrack_backend.currency (
   id          UUID          DEFAULT gen_random_uuid() PRIMARY KEY,
-  name        TEXT          UNIQUE NOT NULL,
+  ticker      TEXT          UNIQUE NOT NULL,
   symbol      VARCHAR(5)    NOT NULL,
   created_at  TIMESTAMPTZ   NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ   NOT NULL DEFAULT now()

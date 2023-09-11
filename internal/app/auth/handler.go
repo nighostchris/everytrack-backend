@@ -64,6 +64,13 @@ func (ah *AuthHandler) Signup(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, map[string]interface{}{"success": false, "error": "Username already in use."})
 	}
 
+	// Get default currency from database
+	defaultCurrencyId, getDefaultCurrencyIdError := database.GetDefaultCurrency(ah.Db)
+	if getDefaultCurrencyIdError != nil {
+		ah.Logger.Error(fmt.Sprintf("failed to get default currency id. %s", getDefaultCurrencyIdError.Error()))
+		return c.JSON(http.StatusNotFound, map[string]interface{}{"success": false, "error": "Internal server error."})
+	}
+
 	passwordHash, generatePasswordHashError := bcrypt.GenerateFromPassword([]byte(data.Password), bcrypt.DefaultCost)
 
 	if generatePasswordHashError != nil {
@@ -73,9 +80,10 @@ func (ah *AuthHandler) Signup(c echo.Context) error {
 	newClientId, createNewClientError := database.CreateNewClient(
 		ah.Db,
 		database.CreateNewClientParams{
-			Email:    data.Email,
-			Username: data.Username,
-			Password: string(passwordHash),
+			Email:      data.Email,
+			Username:   data.Username,
+			Password:   string(passwordHash),
+			CurrencyId: defaultCurrencyId,
 		},
 	)
 

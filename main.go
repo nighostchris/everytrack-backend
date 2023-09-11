@@ -6,6 +6,7 @@ import (
 
 	"github.com/nighostchris/everytrack-backend/internal/app/auth"
 	"github.com/nighostchris/everytrack-backend/internal/app/savings"
+	"github.com/nighostchris/everytrack-backend/internal/app/settings"
 	"github.com/nighostchris/everytrack-backend/internal/config"
 	"github.com/nighostchris/everytrack-backend/internal/connections/postgres"
 	"github.com/nighostchris/everytrack-backend/internal/connections/server"
@@ -28,6 +29,7 @@ func main() {
 	// Define routes for server
 	auth.NewHandler(db, env, zapLogger, &authMiddleware).BindRoutes(app.Group("/v1/auth"))
 	savings.NewHandler(db, zapLogger, &authMiddleware).BindRoutes(app.Group("/v1/savings"))
+	settings.NewHandler(db, zapLogger, &authMiddleware).BindRoutes(app.Group("/v1/settings"))
 
 	// Start web server
 	if initWebServerError := app.Start(fmt.Sprintf("%s:%d", env.WebServerHost, env.WebServerPort)); initWebServerError != nil {

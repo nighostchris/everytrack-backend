@@ -8,13 +8,14 @@ import (
 
 type BankDetail struct {
 	Name            string `json:"name"`
+	Icon            string `json:"icon"`
 	AccountTypeId   string `json:"account_type_id"`
 	AccountTypeName string `json:"account_type_name"`
 }
 
 func GetAllBankDetails(db *pgxpool.Pool) ([]BankDetail, error) {
 	var bankDetails []BankDetail
-	query := `SELECT ap.name, apat.id as account_type_id, apat.name as account_type_name
+	query := `SELECT ap.name, ap.icon, apat.id as account_type_id, apat.name as account_type_name
 	FROM everytrack_backend.asset_provider AS ap
 	INNER JOIN everytrack_backend.asset_provider_account_type AS apat ON ap.id = apat.asset_provider_id
 	WHERE ap.type = 'bank';`
@@ -27,7 +28,7 @@ func GetAllBankDetails(db *pgxpool.Pool) ([]BankDetail, error) {
 
 	for rows.Next() {
 		var bankDetail BankDetail
-		scanError := rows.Scan(&bankDetail.Name, &bankDetail.AccountTypeId, &bankDetail.AccountTypeName)
+		scanError := rows.Scan(&bankDetail.Name, &bankDetail.Icon, &bankDetail.AccountTypeId, &bankDetail.AccountTypeName)
 		if scanError != nil {
 			return []BankDetail{}, scanError
 		}

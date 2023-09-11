@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/nighostchris/everytrack-backend/internal/app/auth"
+	"github.com/nighostchris/everytrack-backend/internal/app/currency"
 	"github.com/nighostchris/everytrack-backend/internal/app/savings"
 	"github.com/nighostchris/everytrack-backend/internal/app/settings"
 	"github.com/nighostchris/everytrack-backend/internal/config"
@@ -29,6 +30,7 @@ func main() {
 	// Define routes for server
 	auth.NewHandler(db, env, zapLogger, &authMiddleware).BindRoutes(app.Group("/v1/auth"))
 	savings.NewHandler(db, zapLogger, &authMiddleware).BindRoutes(app.Group("/v1/savings"))
+	currency.NewHandler(db, zapLogger, &authMiddleware).BindRoutes(app.Group("/v1/currency"))
 	settings.NewHandler(db, zapLogger, &authMiddleware).BindRoutes(app.Group("/v1/settings"))
 
 	// Start web server

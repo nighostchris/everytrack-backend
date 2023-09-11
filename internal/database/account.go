@@ -8,8 +8,8 @@ import (
 
 type BankAccount struct {
 	Balance       string `json:"balance"`
-	Currency      string `json:"currency"`
-	AccountTypeId string `json:"account_type_id"`
+	CurrencyId    string `json:"currencyId"`
+	AccountTypeId string `json:"accountTypeId"`
 }
 
 type CreateNewAccountParams struct {
@@ -26,7 +26,7 @@ type UpdateAccountParams struct {
 
 func GetAllBankAccounts(db *pgxpool.Pool, clientId string) ([]BankAccount, error) {
 	var bankAccounts []BankAccount
-	query := `SELECT a.balance, apat.id as account_type_id, c.symbol as currency
+	query := `SELECT a.balance, apat.id as account_type_id, c.id as currency_id
 	FROM everytrack_backend.account AS a
 	INNER JOIN everytrack_backend.asset_provider_account_type AS apat ON a.asset_provider_account_type_id = apat.id
 	INNER JOIN everytrack_backend.asset_provider AS ap ON apat.asset_provider_id = ap.id
@@ -41,7 +41,7 @@ func GetAllBankAccounts(db *pgxpool.Pool, clientId string) ([]BankAccount, error
 
 	for rows.Next() {
 		var bankAccount BankAccount
-		scanError := rows.Scan(&bankAccount.Balance, &bankAccount.AccountTypeId, &bankAccount.Currency)
+		scanError := rows.Scan(&bankAccount.Balance, &bankAccount.AccountTypeId, &bankAccount.CurrencyId)
 		if scanError != nil {
 			return []BankAccount{}, scanError
 		}
@@ -53,7 +53,7 @@ func GetAllBankAccounts(db *pgxpool.Pool, clientId string) ([]BankAccount, error
 
 func CreateNewAccount(db *pgxpool.Pool, params CreateNewAccountParams) (bool, error) {
 	query := "INSERT INTO everytrack_backend.account (client_id, asset_provider_account_type_id, currency_id, balance) VALUES ($1, $2, $3, $4);"
-	_, createError := db.Exec(context.Background(), query, params.ClientId, params.AccountTypeId, params.CurrencyId, 0)
+	_, createError := db.Exec(context.Background(), query, params.ClientId, params.AccountTypeId, params.CurrencyId, "0")
 
 	if createError != nil {
 		return false, createError

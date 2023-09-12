@@ -36,6 +36,12 @@ type CreateNewAccountRequestBody struct {
 	AccountTypeId string `json:"accountTypeId"`
 }
 
+type UpdateAccountRequestBody struct {
+	Balance       string `json:"balance"`
+	CurrencyId    string `json:"currencyId"`
+	AccountTypeId string `json:"accountTypeId"`
+}
+
 func NewHandler(db *pgxpool.Pool, l *zap.Logger, am *server.AuthMiddleware) *SavingsHandler {
 	handler := SavingsHandler{Db: db, Logger: l, AuthMiddleware: am}
 	return &handler
@@ -118,6 +124,36 @@ func (sh *SavingsHandler) CreateNewAccount(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]interface{}{"success": false, "error": "Internal server error."})
 	}
 	sh.Logger.Debug("created a new account in database")
+
+	return c.JSON(http.StatusOK, map[string]interface{}{"success": true})
+}
+
+func (sh *SavingsHandler) UpdateAccount(c echo.Context) error {
+	data := new(UpdateAccountRequestBody)
+	sh.Logger.Info("starts")
+
+	// Retrieve request body and validate with schema
+	if bindError := c.Bind(data); bindError != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{"success": false, "error": "Missing required fields"})
+	}
+
+	if validateError := c.Validate(data); validateError != nil {
+		var ve validator.ValidationErrors
+		if errors.As(validateError, &ve) {
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{"success": false, "error": fmt.Sprintf("Invalid field %s", strcase.ToLowerCamel(ve[0].Field()))})
+		}
+		sh.Logger.Error(fmt.Sprintf("invalid field. %s", validateError.Error()))
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{"success": false, "error": "Invalid field"})
+	}
+	sh.Logger.Debug("validated request parameters")
+
+	// Update account in database
+	_, updateError := database.UpdateAccount(sh.Db, database.UpdateAccountParams{Balance: data.Balance, CurrencyId: data.CurrencyId, AccountTypeId: data.AccountTypeId})
+	if updateError != nil {
+		sh.Logger.Error(fmt.Sprintf("failed to update account in database. %s", updateError.Error()))
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{"success": false, "error": "Internal server error."})
+	}
+	sh.Logger.Debug("updated account in database")
 
 	return c.JSON(http.StatusOK, map[string]interface{}{"success": true})
 }

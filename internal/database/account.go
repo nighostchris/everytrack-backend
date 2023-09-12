@@ -63,8 +63,8 @@ func CreateNewAccount(db *pgxpool.Pool, params CreateNewAccountParams) (bool, er
 }
 
 func UpdateAccount(db *pgxpool.Pool, params UpdateAccountParams) (bool, error) {
-	query := "UPDATE everytrack_backend.account SET balance = $1, asset_provider_account_type_id = $2, currency_id = $3;"
-	_, updateError := db.Exec(context.Background(), query, params.Balance, params.AccountTypeId, params.CurrencyId)
+	query := "UPDATE everytrack_backend.account SET balance = $1, currency_id = $2 WHERE asset_provider_account_type_id = $3;"
+	_, updateError := db.Exec(context.Background(), query, params.Balance, params.CurrencyId, params.AccountTypeId)
 
 	if updateError != nil {
 		return false, updateError

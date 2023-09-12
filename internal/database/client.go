@@ -45,8 +45,8 @@ func GetClientByEmail(db *pgxpool.Pool, email string) (Client, error) {
 
 func GetClientById(db *pgxpool.Pool, id string) (Client, error) {
 	var client Client
-	query := "SELECT id, email, password, currency_id, created_at, updated_at FROM everytrack_backend.client WHERE id = $1;"
-	queryError := db.QueryRow(context.Background(), query, id).Scan(&client.Id, &client.Email, &client.Password, &client.CurrencyId, &client.CreatedAt, &client.UpdatedAt)
+	query := "SELECT id, email, username, password, currency_id, created_at, updated_at FROM everytrack_backend.client WHERE id = $1;"
+	queryError := db.QueryRow(context.Background(), query, id).Scan(&client.Id, &client.Email, &client.Username, &client.Password, &client.CurrencyId, &client.CreatedAt, &client.UpdatedAt)
 
 	if queryError != nil {
 		return client, queryError

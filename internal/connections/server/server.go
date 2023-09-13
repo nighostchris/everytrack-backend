@@ -39,7 +39,6 @@ func New(domainWhitelist []string, logger *zap.Logger, env *config.Config) *echo
 				return false, nil
 			}
 		},
-		AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
 		AllowMethods:     []string{"GET", "PUT", "POST", "DELETE"},
 		AllowCredentials: true,
 	}))

@@ -158,7 +158,7 @@ func (ah *AuthHandler) Login(c echo.Context) error {
 	})
 	ah.Logger.Debug("finished setting access token to response cookie")
 
-	return c.JSON(http.StatusOK, map[string]interface{}{"success": true})
+	return c.JSON(http.StatusOK, map[string]interface{}{"success": true, "data": map[string]interface{}{"token": token}})
 }
 
 func (ah *AuthHandler) Verify(c echo.Context) error {

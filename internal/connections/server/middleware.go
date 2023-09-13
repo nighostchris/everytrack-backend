@@ -31,6 +31,28 @@ func (am *AuthMiddleware) New(next echo.HandlerFunc) echo.HandlerFunc {
 
 			if getTokenError != nil {
 				am.Logger.Error("token does not exist in cookie")
+				// Try to extract token from Authorization header
+				authHeader := c.Request().Header.Get("Authorization")
+
+				if len(authHeader) > 0 {
+					regexExpression := "\\s|Bearer"
+					regex := regexp.MustCompile(regexExpression)
+					bearerToken := regex.ReplaceAllString(authHeader, "")
+
+					if len(bearerToken) > 0 {
+						isTokenValid, uid := am.TokenUtils.VerifyToken(bearerToken)
+
+						if !isTokenValid {
+							am.Logger.Error("invalid token")
+							return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false})
+						}
+
+						c.Set("uid", uid)
+						next(c)
+						return nil
+					}
+				}
+
 				return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false})
 			}
 
@@ -62,9 +84,12 @@ func (lm *LogMiddleware) New(next echo.HandlerFunc) echo.HandlerFunc {
 				data = regex.ReplaceAllString(string(rawBody), "")
 				c.Request().Body = io.NopCloser(bytes.NewBuffer(rawBody))
 			}
+			requestId := c.Request().Header.Get(echo.HeaderXRequestID)
+			c.Set("requestId", requestId)
 
 			lm.Logger.Info(
 				"incoming request",
+				zap.String("requestId", requestId),
 				zap.String("method", c.Request().Method),
 				zap.String("path", c.Request().RequestURI),
 				zap.String("data", data),

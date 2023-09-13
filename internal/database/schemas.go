@@ -44,3 +44,10 @@ type Currency struct {
 	Ticker string `json:"ticker"`
 	Symbol string `json:"symbol"`
 }
+
+type ExchangeRate struct {
+	Id               string `json:"id"`
+	BaseCurrencyId   string `json:"base_currency_id"`
+	TargetCurrencyId string `json:"target_currency_id"`
+	Rate             string `json:"rate"`
+}

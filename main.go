@@ -7,6 +7,7 @@ import (
 
 	"github.com/nighostchris/everytrack-backend/internal/app/auth"
 	"github.com/nighostchris/everytrack-backend/internal/app/currency"
+	"github.com/nighostchris/everytrack-backend/internal/app/exrate"
 	"github.com/nighostchris/everytrack-backend/internal/app/savings"
 	"github.com/nighostchris/everytrack-backend/internal/app/settings"
 	"github.com/nighostchris/everytrack-backend/internal/config"
@@ -34,6 +35,7 @@ func main() {
 	savings.NewHandler(db, zapLogger, &authMiddleware).BindRoutes(app.Group("/v1/savings"))
 	currency.NewHandler(db, zapLogger, &authMiddleware).BindRoutes(app.Group("/v1/currency"))
 	settings.NewHandler(db, zapLogger, &authMiddleware).BindRoutes(app.Group("/v1/settings"))
+	exrate.NewHandler(db, zapLogger, &authMiddleware).BindRoutes(app.Group("/v1/exrate"))
 
 	// Fetch exchange rates from Github Currency API every day
 	tool := tools.GithubCurrencyApi{Db: db, Logger: zapLogger}

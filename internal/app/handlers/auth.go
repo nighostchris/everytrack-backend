@@ -1,4 +1,4 @@
-package auth
+package handlers
 
 import (
 	"errors"
@@ -9,8 +9,6 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
-	"github.com/nighostchris/everytrack-backend/internal/config"
-	"github.com/nighostchris/everytrack-backend/internal/connections/server"
 	"github.com/nighostchris/everytrack-backend/internal/database"
 	"github.com/nighostchris/everytrack-backend/internal/utils"
 	"go.uber.org/zap"
@@ -18,10 +16,9 @@ import (
 )
 
 type AuthHandler struct {
-	Db             *pgxpool.Pool
-	Logger         *zap.Logger
-	TokenUtils     *utils.TokenUtils
-	AuthMiddleware *server.AuthMiddleware
+	Db         *pgxpool.Pool
+	Logger     *zap.Logger
+	TokenUtils *utils.TokenUtils
 }
 
 type SignupRequestBody struct {
@@ -33,12 +30,6 @@ type SignupRequestBody struct {
 type LoginRequestBody struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`
-}
-
-func NewHandler(db *pgxpool.Pool, env *config.Config, l *zap.Logger, am *server.AuthMiddleware) *AuthHandler {
-	tokenUtils := utils.TokenUtils{Env: env, Logger: l}
-	handler := AuthHandler{Db: db, Logger: l, TokenUtils: &tokenUtils, AuthMiddleware: am}
-	return &handler
 }
 
 func (ah *AuthHandler) Signup(c echo.Context) error {

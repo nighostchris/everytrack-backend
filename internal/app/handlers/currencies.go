@@ -1,4 +1,4 @@
-package currency
+package handlers
 
 import (
 	"fmt"
@@ -6,23 +6,16 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
-	"github.com/nighostchris/everytrack-backend/internal/connections/server"
 	"github.com/nighostchris/everytrack-backend/internal/database"
 	"go.uber.org/zap"
 )
 
-type CurrencyHandler struct {
-	Db             *pgxpool.Pool
-	Logger         *zap.Logger
-	AuthMiddleware *server.AuthMiddleware
+type CurrenciesHandler struct {
+	Db     *pgxpool.Pool
+	Logger *zap.Logger
 }
 
-func NewHandler(db *pgxpool.Pool, l *zap.Logger, am *server.AuthMiddleware) *CurrencyHandler {
-	handler := CurrencyHandler{Db: db, Logger: l, AuthMiddleware: am}
-	return &handler
-}
-
-func (ch *CurrencyHandler) GetAllCurrencies(c echo.Context) error {
+func (ch *CurrenciesHandler) GetAllCurrencies(c echo.Context) error {
 	ch.Logger.Info("starts")
 
 	// Get all bank details from database

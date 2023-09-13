@@ -1,4 +1,4 @@
-package savings
+package handlers
 
 import (
 	"errors"
@@ -9,15 +9,13 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
-	"github.com/nighostchris/everytrack-backend/internal/connections/server"
 	"github.com/nighostchris/everytrack-backend/internal/database"
 	"go.uber.org/zap"
 )
 
 type SavingsHandler struct {
-	Db             *pgxpool.Pool
-	Logger         *zap.Logger
-	AuthMiddleware *server.AuthMiddleware
+	Db     *pgxpool.Pool
+	Logger *zap.Logger
 }
 
 type AccountType struct {
@@ -40,11 +38,6 @@ type UpdateAccountRequestBody struct {
 	Balance       string `json:"balance"`
 	CurrencyId    string `json:"currencyId"`
 	AccountTypeId string `json:"accountTypeId"`
-}
-
-func NewHandler(db *pgxpool.Pool, l *zap.Logger, am *server.AuthMiddleware) *SavingsHandler {
-	handler := SavingsHandler{Db: db, Logger: l, AuthMiddleware: am}
-	return &handler
 }
 
 func (sh *SavingsHandler) GetAllBankDetails(c echo.Context) error {

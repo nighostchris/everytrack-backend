@@ -1,4 +1,4 @@
-package settings
+package handlers
 
 import (
 	"errors"
@@ -9,25 +9,18 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
-	"github.com/nighostchris/everytrack-backend/internal/connections/server"
 	"github.com/nighostchris/everytrack-backend/internal/database"
 	"go.uber.org/zap"
 )
 
 type SettingsHandler struct {
-	Db             *pgxpool.Pool
-	Logger         *zap.Logger
-	AuthMiddleware *server.AuthMiddleware
+	Db     *pgxpool.Pool
+	Logger *zap.Logger
 }
 
 type UpdateSettingsRequestBody struct {
-	Username   string `json:"username" validate:"required,max=20"`
 	CurrencyId string `json:"currencyId" validate:"required"`
-}
-
-func NewHandler(db *pgxpool.Pool, l *zap.Logger, am *server.AuthMiddleware) *SettingsHandler {
-	handler := SettingsHandler{Db: db, Logger: l, AuthMiddleware: am}
-	return &handler
+	Username   string `json:"username" validate:"required,max=20"`
 }
 
 func (sh *SettingsHandler) GetAllClientSettings(c echo.Context) error {

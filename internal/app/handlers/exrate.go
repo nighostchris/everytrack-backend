@@ -1,4 +1,4 @@
-package exrate
+package handlers
 
 import (
 	"fmt"
@@ -6,26 +6,19 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
-	"github.com/nighostchris/everytrack-backend/internal/connections/server"
 	"github.com/nighostchris/everytrack-backend/internal/database"
 	"go.uber.org/zap"
 )
 
 type ExchangeRateHandler struct {
-	Db             *pgxpool.Pool
-	Logger         *zap.Logger
-	AuthMiddleware *server.AuthMiddleware
+	Db     *pgxpool.Pool
+	Logger *zap.Logger
 }
 
 type ExchangeRateData struct {
 	Rate             string `json:"rate"`
 	BaseCurrencyId   string `json:"baseCurrencyId"`
 	TargetCurrencyId string `json:"targetCurrencyId"`
-}
-
-func NewHandler(db *pgxpool.Pool, l *zap.Logger, am *server.AuthMiddleware) *ExchangeRateHandler {
-	handler := ExchangeRateHandler{Db: db, Logger: l, AuthMiddleware: am}
-	return &handler
 }
 
 func (erh *ExchangeRateHandler) GetAllExchangeRates(c echo.Context) error {

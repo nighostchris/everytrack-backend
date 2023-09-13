@@ -23,22 +23,27 @@ type LogMiddleware struct {
 
 func (am *AuthMiddleware) New(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		am.Logger.Info("going through auth middleware")
-		token, getTokenError := c.Request().Cookie("token")
+		whitelistPaths := []string{"/v1/auth/login", "/v1/auth/signup"}
 
-		if getTokenError != nil {
-			am.Logger.Error("token does not exist in cookie")
-			return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false})
+		if !slices.Contains(whitelistPaths, c.Request().RequestURI) {
+			am.Logger.Info("going through auth middleware")
+			token, getTokenError := c.Request().Cookie("token")
+
+			if getTokenError != nil {
+				am.Logger.Error("token does not exist in cookie")
+				return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false})
+			}
+
+			isTokenValid, uid := am.TokenUtils.VerifyToken(token.Value)
+
+			if !isTokenValid {
+				am.Logger.Error("invalid token")
+				return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false})
+			}
+
+			c.Set("uid", uid)
 		}
 
-		isTokenValid, uid := am.TokenUtils.VerifyToken(token.Value)
-
-		if !isTokenValid {
-			am.Logger.Error("invalid token")
-			return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false})
-		}
-
-		c.Set("uid", uid)
 		next(c)
 		return nil
 	}

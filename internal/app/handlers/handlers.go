@@ -9,20 +9,20 @@ import (
 )
 
 type Handlers struct {
-	Auth         *AuthHandler
-	Savings      *SavingsHandler
-	Settings     *SettingsHandler
-	Currencies   *CurrenciesHandler
-	ExchangeRate *ExchangeRateHandler
+	Auth          *AuthHandler
+	Savings       *SavingsHandler
+	Settings      *SettingsHandler
+	Currencies    *CurrenciesHandler
+	ExchangeRates *ExchangeRatesHandler
 }
 
 func Init(db *pgxpool.Pool, env *config.Config, logger *zap.Logger) *Handlers {
 	return &Handlers{
-		Savings:      &SavingsHandler{Db: db, Logger: logger},
-		Settings:     &SettingsHandler{Db: db, Logger: logger},
-		Currencies:   &CurrenciesHandler{Db: db, Logger: logger},
-		ExchangeRate: &ExchangeRateHandler{Db: db, Logger: logger},
-		Auth:         &AuthHandler{Db: db, Logger: logger, TokenUtils: &utils.TokenUtils{Env: env, Logger: logger}},
+		Savings:       &SavingsHandler{Db: db, Logger: logger},
+		Settings:      &SettingsHandler{Db: db, Logger: logger},
+		Currencies:    &CurrenciesHandler{Db: db, Logger: logger},
+		ExchangeRates: &ExchangeRatesHandler{Db: db, Logger: logger},
+		Auth:          &AuthHandler{Db: db, Logger: logger, TokenUtils: &utils.TokenUtils{Env: env, Logger: logger}},
 	}
 }
 
@@ -44,7 +44,7 @@ func (h *Handlers) BindRoutes(e *echo.Echo) {
 	// /v1/exrates endpoints
 	// ============================================================
 	exchangeRates := v1.Group("/exrates")
-	exchangeRates.GET("", h.ExchangeRate.GetAllExchangeRates)
+	exchangeRates.GET("", h.ExchangeRates.GetAllExchangeRates)
 	// ============================================================
 	// /v1/savings endpoints
 	// ============================================================

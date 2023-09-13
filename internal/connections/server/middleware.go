@@ -51,6 +51,8 @@ func (am *AuthMiddleware) New(next echo.HandlerFunc) echo.HandlerFunc {
 						next(c)
 						return nil
 					}
+				} else {
+					am.Logger.Error("token does not exist in authorization header as well")
 				}
 
 				return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false})

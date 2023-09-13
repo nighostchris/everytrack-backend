@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type ExchangeRateHandler struct {
+type ExchangeRatesHandler struct {
 	Db     *pgxpool.Pool
 	Logger *zap.Logger
 }
@@ -21,7 +21,7 @@ type ExchangeRateData struct {
 	TargetCurrencyId string `json:"targetCurrencyId"`
 }
 
-func (erh *ExchangeRateHandler) GetAllExchangeRates(c echo.Context) error {
+func (erh *ExchangeRatesHandler) GetAllExchangeRates(c echo.Context) error {
 	erh.Logger.Info("starts")
 
 	// Get all exchange rates from database

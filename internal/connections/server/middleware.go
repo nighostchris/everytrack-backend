@@ -23,7 +23,7 @@ type LogMiddleware struct {
 
 func (am *AuthMiddleware) New(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		whitelistPaths := []string{"/v1/auth/login", "/v1/auth/signup"}
+		whitelistPaths := []string{"/", "/v1/auth/login", "/v1/auth/signup"}
 
 		if !slices.Contains(whitelistPaths, c.Request().RequestURI) {
 			am.Logger.Info("going through auth middleware")

@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"net/http"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/nighostchris/everytrack-backend/internal/config"
@@ -27,6 +29,13 @@ func Init(db *pgxpool.Pool, env *config.Config, logger *zap.Logger) *Handlers {
 }
 
 func (h *Handlers) BindRoutes(e *echo.Echo) {
+	// ============================================================
+	// / - Healthcheck endpoint
+	// ============================================================
+	e.GET("/", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]interface{}{"success": true})
+	})
+
 	v1 := e.Group("/v1")
 	// ============================================================
 	// /v1/auth endpoints

@@ -14,14 +14,18 @@ type Handlers struct {
 	Auth          *AuthHandler
 	Savings       *SavingsHandler
 	Settings      *SettingsHandler
+	Providers     *ProvidersHandler
 	Currencies    *CurrenciesHandler
 	ExchangeRates *ExchangeRatesHandler
 }
+
+type LooseJson map[string]interface{}
 
 func Init(db *pgxpool.Pool, env *config.Config, logger *zap.Logger) *Handlers {
 	return &Handlers{
 		Savings:       &SavingsHandler{Db: db, Logger: logger},
 		Settings:      &SettingsHandler{Db: db, Logger: logger},
+		Providers:     &ProvidersHandler{Db: db, Logger: logger},
 		Currencies:    &CurrenciesHandler{Db: db, Logger: logger},
 		ExchangeRates: &ExchangeRatesHandler{Db: db, Logger: logger},
 		Auth:          &AuthHandler{Db: db, Logger: logger, TokenUtils: &utils.TokenUtils{Env: env, Logger: logger}},
@@ -55,10 +59,14 @@ func (h *Handlers) BindRoutes(e *echo.Echo) {
 	exchangeRates := v1.Group("/exrates")
 	exchangeRates.GET("", h.ExchangeRates.GetAllExchangeRates)
 	// ============================================================
+	// /v1/providers endpoints
+	// ============================================================
+	providers := v1.Group("/providers")
+	providers.GET("", h.Providers.GetAllProvidersByType)
+	// ============================================================
 	// /v1/savings endpoints
 	// ============================================================
 	savings := v1.Group("/savings")
-	savings.GET("", h.Savings.GetAllBankDetails)
 	savings.PUT("/account", h.Savings.UpdateAccount)
 	savings.POST("/account", h.Savings.CreateNewAccount)
 	savings.GET("/account", h.Savings.GetAllBankAccounts)

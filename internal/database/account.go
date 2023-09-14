@@ -31,7 +31,7 @@ func GetAllBankAccounts(db *pgxpool.Pool, clientId string) ([]BankAccount, error
 	INNER JOIN everytrack_backend.asset_provider_account_type AS apat ON a.asset_provider_account_type_id = apat.id
 	INNER JOIN everytrack_backend.asset_provider AS ap ON apat.asset_provider_id = ap.id
 	INNER JOIN everytrack_backend.currency AS c ON c.id = a.currency_id
-	WHERE ap.type = 'bank' AND a.client_id = $1;`
+	WHERE ap.type = 'savings' AND a.client_id = $1;`
 	rows, queryError := db.Query(context.Background(), query, clientId)
 	if queryError != nil {
 		return []BankAccount{}, queryError

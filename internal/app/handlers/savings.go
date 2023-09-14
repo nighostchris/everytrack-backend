@@ -18,17 +18,6 @@ type SavingsHandler struct {
 	Logger *zap.Logger
 }
 
-type AccountType struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
-}
-
-type BankDetailsRecord struct {
-	Name         string        `json:"name"`
-	Icon         string        `json:"icon"`
-	AccountTypes []AccountType `json:"accountTypes"`
-}
-
 type CreateNewAccountRequestBody struct {
 	CurrencyId    string `json:"currencyId"`
 	AccountTypeId string `json:"accountTypeId"`
@@ -38,38 +27,6 @@ type UpdateAccountRequestBody struct {
 	Balance       string `json:"balance"`
 	CurrencyId    string `json:"currencyId"`
 	AccountTypeId string `json:"accountTypeId"`
-}
-
-func (sh *SavingsHandler) GetAllBankDetails(c echo.Context) error {
-	sh.Logger.Info("starts")
-
-	// Get all bank details from database
-	bankDetails, getBankDetailsError := database.GetAllBankDetails(sh.Db)
-
-	if getBankDetailsError != nil {
-		sh.Logger.Error(fmt.Sprintf("failed to get bank details from database. %s", getBankDetailsError.Error()))
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{"success": false, "error": "Internal server error."})
-	}
-	sh.Logger.Debug("got bank details from database")
-
-	// Construct the response object
-	bankDetailsMap := make(map[string][]AccountType)
-	bankIconMap := make(map[string]string)
-	for _, bankDetail := range bankDetails {
-		accountType := AccountType{Id: bankDetail.AccountTypeId, Name: bankDetail.AccountTypeName}
-		bankDetailsMap[bankDetail.Name] = append(bankDetailsMap[bankDetail.Name], accountType)
-		bankIconMap[bankDetail.Name] = bankDetail.Icon
-	}
-	responseData := []BankDetailsRecord{}
-	for bankName, accountTypes := range bankDetailsMap {
-		responseData = append(responseData, BankDetailsRecord{
-			Name:         bankName,
-			Icon:         bankIconMap[bankName],
-			AccountTypes: accountTypes,
-		})
-	}
-
-	return c.JSON(http.StatusOK, map[string]interface{}{"success": true, "data": responseData})
 }
 
 func (sh *SavingsHandler) GetAllBankAccounts(c echo.Context) error {

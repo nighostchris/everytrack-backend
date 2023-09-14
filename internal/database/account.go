@@ -6,7 +6,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type BankAccount struct {
+type AccountSummary struct {
 	Balance       string `json:"balance"`
 	CurrencyId    string `json:"currencyId"`
 	AccountTypeId string `json:"accountTypeId"`
@@ -24,31 +24,31 @@ type UpdateAccountParams struct {
 	AccountTypeId string `json:"account_type_id"`
 }
 
-func GetAllBankAccounts(db *pgxpool.Pool, clientId string) ([]BankAccount, error) {
-	var bankAccounts []BankAccount
+func GetAllAccountSummaryByType(db *pgxpool.Pool, providerType string, clientId string) ([]AccountSummary, error) {
+	var accountSummary []AccountSummary
 	query := `SELECT a.balance, apat.id as account_type_id, c.id as currency_id
 	FROM everytrack_backend.account AS a
 	INNER JOIN everytrack_backend.asset_provider_account_type AS apat ON a.asset_provider_account_type_id = apat.id
 	INNER JOIN everytrack_backend.asset_provider AS ap ON apat.asset_provider_id = ap.id
 	INNER JOIN everytrack_backend.currency AS c ON c.id = a.currency_id
-	WHERE ap.type = 'savings' AND a.client_id = $1;`
-	rows, queryError := db.Query(context.Background(), query, clientId)
+	WHERE ap.type = $1 AND a.client_id = $2;`
+	rows, queryError := db.Query(context.Background(), query, providerType, clientId)
 	if queryError != nil {
-		return []BankAccount{}, queryError
+		return []AccountSummary{}, queryError
 	}
 
 	defer rows.Close()
 
 	for rows.Next() {
-		var bankAccount BankAccount
-		scanError := rows.Scan(&bankAccount.Balance, &bankAccount.AccountTypeId, &bankAccount.CurrencyId)
+		var summary AccountSummary
+		scanError := rows.Scan(&summary.Balance, &summary.AccountTypeId, &summary.CurrencyId)
 		if scanError != nil {
-			return []BankAccount{}, scanError
+			return []AccountSummary{}, scanError
 		}
-		bankAccounts = append(bankAccounts, bankAccount)
+		accountSummary = append(accountSummary, summary)
 	}
 
-	return bankAccounts, nil
+	return accountSummary, nil
 }
 
 func CreateNewAccount(db *pgxpool.Pool, params CreateNewAccountParams) (bool, error) {

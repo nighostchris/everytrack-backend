@@ -12,7 +12,7 @@ import (
 
 type Handlers struct {
 	Auth          *AuthHandler
-	Savings       *SavingsHandler
+	Accounts      *AccountsHandler
 	Settings      *SettingsHandler
 	Providers     *ProvidersHandler
 	Currencies    *CurrenciesHandler
@@ -23,8 +23,8 @@ type LooseJson map[string]interface{}
 
 func Init(db *pgxpool.Pool, env *config.Config, logger *zap.Logger) *Handlers {
 	return &Handlers{
-		Savings:       &SavingsHandler{Db: db, Logger: logger},
 		Settings:      &SettingsHandler{Db: db, Logger: logger},
+		Accounts:      &AccountsHandler{Db: db, Logger: logger},
 		Providers:     &ProvidersHandler{Db: db, Logger: logger},
 		Currencies:    &CurrenciesHandler{Db: db, Logger: logger},
 		ExchangeRates: &ExchangeRatesHandler{Db: db, Logger: logger},
@@ -41,6 +41,13 @@ func (h *Handlers) BindRoutes(e *echo.Echo) {
 	})
 
 	v1 := e.Group("/v1")
+	// ============================================================
+	// /v1/accounts endpoints
+	// ============================================================
+	accounts := v1.Group("/accounts")
+	accounts.PUT("", h.Accounts.UpdateAccount)
+	accounts.POST("", h.Accounts.CreateNewAccount)
+	accounts.GET("", h.Accounts.GetAllAccountsByType)
 	// ============================================================
 	// /v1/auth endpoints
 	// ============================================================
@@ -63,13 +70,6 @@ func (h *Handlers) BindRoutes(e *echo.Echo) {
 	// ============================================================
 	providers := v1.Group("/providers")
 	providers.GET("", h.Providers.GetAllProvidersByType)
-	// ============================================================
-	// /v1/savings endpoints
-	// ============================================================
-	savings := v1.Group("/savings")
-	savings.PUT("/account", h.Savings.UpdateAccount)
-	savings.POST("/account", h.Savings.CreateNewAccount)
-	savings.GET("/account", h.Savings.GetAllBankAccounts)
 	// ============================================================
 	// /v1/settings endpoints
 	// ============================================================

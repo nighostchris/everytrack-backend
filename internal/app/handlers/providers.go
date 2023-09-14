@@ -8,6 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/nighostchris/everytrack-backend/internal/database"
 	"go.uber.org/zap"
+	"golang.org/x/exp/slices"
 )
 
 type ProvidersHandler struct {
@@ -38,6 +39,13 @@ func (ph *ProvidersHandler) GetAllProvidersByType(c echo.Context) error {
 		return c.JSON(
 			http.StatusBadRequest,
 			LooseJson{"success": false, "error": "Undefined provider type."},
+		)
+	}
+	if !slices.Contains(ProviderTypes, providerType) {
+		ph.Logger.Error(fmt.Sprintf("invalid provider type %s", providerType), requestId)
+		return c.JSON(
+			http.StatusBadRequest,
+			LooseJson{"success": false, "error": "Invalid provider type."},
 		)
 	}
 	ph.Logger.Info(fmt.Sprintf("going to get all providers by type %s", providerType), requestId)

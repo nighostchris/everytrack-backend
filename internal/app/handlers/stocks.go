@@ -2,9 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
+	"github.com/go-playground/validator/v10"
+	"github.com/iancoleman/strcase"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/nighostchris/everytrack-backend/internal/database"
@@ -88,7 +91,7 @@ func (sh *StocksHandler) GetAllStocks(c echo.Context) error {
 	}
 	sh.Logger.Debug(fmt.Sprintf("constructed response object - %#v", stockRecords), requestId)
 
-	return c.JSON(http.StatusOK, map[string]interface{}{"success": true, "data": stockRecords})
+	return c.JSON(http.StatusOK, LooseJson{"success": true, "data": stockRecords})
 }
 
 func (sh *StocksHandler) GetAllStockHoldings(c echo.Context) error {
@@ -125,9 +128,59 @@ func (sh *StocksHandler) GetAllStockHoldings(c echo.Context) error {
 	}
 	sh.Logger.Debug(fmt.Sprintf("constructed response object - %#v", responseData), requestId)
 
-	return c.JSON(http.StatusOK, map[string]interface{}{"success": true, "data": responseData})
+	return c.JSON(http.StatusOK, LooseJson{"success": true, "data": responseData})
 }
 
 func (sh *StocksHandler) CreateNewStockHolding(c echo.Context) error {
-	return c.JSON(http.StatusOK, map[string]interface{}{"success": true, "data": ""})
+	data := new(CreateNewStockHoldingRequestBody)
+	requestId := zap.String("requestId", c.Get("requestId").(string))
+	sh.Logger.Info("starts", requestId)
+
+	// Retrieve request body and validate with schema
+	if bindError := c.Bind(data); bindError != nil {
+		return c.JSON(
+			http.StatusBadRequest,
+			LooseJson{"success": false, "error": "Missing required fields"},
+		)
+	}
+
+	if validateError := c.Validate(data); validateError != nil {
+		var ve validator.ValidationErrors
+		if errors.As(validateError, &ve) {
+			return c.JSON(
+				http.StatusBadRequest,
+				LooseJson{"success": false, "error": fmt.Sprintf("Invalid field %s", strcase.ToLowerCamel(ve[0].Field()))},
+			)
+		}
+		sh.Logger.Error(fmt.Sprintf("invalid field. %s", validateError.Error()), requestId)
+		return c.JSON(
+			http.StatusBadRequest,
+			LooseJson{"success": false, "error": "Invalid field"},
+		)
+	}
+	sh.Logger.Debug("validated request parameters", requestId)
+
+	// Create a new stock holding in database
+	_, createError := database.CreateNewStockHolding(
+		sh.Db,
+		database.CreateNewStockHoldingParams{
+			AccountId: data.AccountId,
+			StockId:   data.StockId,
+			Unit:      data.Unit,
+			Cost:      data.Cost,
+		},
+	)
+	if createError != nil {
+		sh.Logger.Error(
+			fmt.Sprintf("failed to create new stock holding in database. %s", createError.Error()),
+			requestId,
+		)
+		return c.JSON(
+			http.StatusInternalServerError,
+			LooseJson{"success": false, "error": "Internal server error."},
+		)
+	}
+	sh.Logger.Debug("created a new stock holding in database", requestId)
+
+	return c.JSON(http.StatusOK, LooseJson{"success": true})
 }

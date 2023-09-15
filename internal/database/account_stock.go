@@ -6,6 +6,13 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type CreateNewStockHoldingParams struct {
+	AccountId string `json:"account_id"`
+	StockId   string `json:"stock_id"`
+	Unit      string `json:"unit"`
+	Cost      string `json:"cost"`
+}
+
 func GetAllStockHoldings(db *pgxpool.Pool, clientId string) ([]AccountStock, error) {
 	var accountStocks []AccountStock
 	query := `SELECT accs.id, account_id, stock_id, unit, cost
@@ -29,4 +36,15 @@ func GetAllStockHoldings(db *pgxpool.Pool, clientId string) ([]AccountStock, err
 	}
 
 	return accountStocks, nil
+}
+
+func CreateNewStockHolding(db *pgxpool.Pool, params CreateNewStockHoldingParams) (bool, error) {
+	query := "INSERT INTO everytrack_backend.account_stock (account_id, stock_id, unit, cost) VALUES ($1, $2, $3, $4);"
+	_, createError := db.Exec(context.Background(), query, params.AccountId, params.StockId, params.Unit, params.Cost)
+
+	if createError != nil {
+		return false, createError
+	}
+
+	return true, nil
 }

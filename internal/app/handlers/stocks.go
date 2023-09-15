@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -66,28 +65,16 @@ func (sh *StocksHandler) GetAllStocks(c echo.Context) error {
 	sh.Logger.Debug("got stocks from database", requestId)
 
 	// Construct the response object
-	stocksJson, marshalError := json.Marshal(stocks)
-	if marshalError != nil {
-		sh.Logger.Error(
-			fmt.Sprintf("failed to marshal stocks into raw json. %s", marshalError.Error()),
-			requestId,
-		)
-		return c.JSON(
-			http.StatusInternalServerError,
-			LooseJson{"success": false, "error": "Internal server error."},
-		)
-	}
 	var stockRecords []StockRecord
-	unmarshalError := json.Unmarshal([]byte(stocksJson), &stockRecords)
-	if unmarshalError != nil {
-		sh.Logger.Error(
-			fmt.Sprintf("failed to unmarshal stocksJson into response object. %s", unmarshalError.Error()),
-			requestId,
-		)
-		return c.JSON(
-			http.StatusInternalServerError,
-			LooseJson{"success": false, "error": "Internal server error."},
-		)
+	for _, stock := range stocks {
+		stockRecords = append(stockRecords, StockRecord{
+			Id:           stock.Id,
+			CountryId:    stock.CountryId,
+			CurrencyId:   stock.CurrencyId,
+			Name:         stock.Name,
+			Ticker:       stock.Ticker,
+			CurrentPrice: stock.CurrentPrice,
+		})
 	}
 	sh.Logger.Debug(fmt.Sprintf("constructed response object - %#v", stockRecords), requestId)
 

@@ -64,7 +64,7 @@ func (ah *AccountsHandler) GetAllAccountsByType(c echo.Context) error {
 			LooseJson{"success": false, "error": "Internal server error."},
 		)
 	}
-	ah.Logger.Debug(fmt.Sprintf("got bank accounts from database - %#v", accountSummary), requestId)
+	ah.Logger.Debug(fmt.Sprintf("got accounts from database - %#v", accountSummary), requestId)
 
 	return c.JSON(http.StatusOK, LooseJson{"success": true, "data": accountSummary})
 }

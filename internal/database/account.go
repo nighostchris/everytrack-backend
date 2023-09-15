@@ -7,6 +7,7 @@ import (
 )
 
 type AccountSummary struct {
+	Id            string `json:"id"`
 	Balance       string `json:"balance"`
 	CurrencyId    string `json:"currencyId"`
 	AccountTypeId string `json:"accountTypeId"`
@@ -25,8 +26,8 @@ type UpdateAccountParams struct {
 }
 
 func GetAllAccountSummaryByType(db *pgxpool.Pool, providerType string, clientId string) ([]AccountSummary, error) {
-	var accountSummary []AccountSummary
-	query := `SELECT a.balance, apat.id as account_type_id, c.id as currency_id
+	accountSummary := []AccountSummary{}
+	query := `SELECT a.id, a.balance, apat.id as account_type_id, c.id as currency_id
 	FROM everytrack_backend.account AS a
 	INNER JOIN everytrack_backend.asset_provider_account_type AS apat ON a.asset_provider_account_type_id = apat.id
 	INNER JOIN everytrack_backend.asset_provider AS ap ON apat.asset_provider_id = ap.id
@@ -41,7 +42,7 @@ func GetAllAccountSummaryByType(db *pgxpool.Pool, providerType string, clientId 
 
 	for rows.Next() {
 		var summary AccountSummary
-		scanError := rows.Scan(&summary.Balance, &summary.AccountTypeId, &summary.CurrencyId)
+		scanError := rows.Scan(&summary.Id, &summary.Balance, &summary.AccountTypeId, &summary.CurrencyId)
 		if scanError != nil {
 			return []AccountSummary{}, scanError
 		}

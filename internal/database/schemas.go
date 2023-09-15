@@ -12,6 +12,14 @@ type Account struct {
 	UpdatedAt                  time.Time `json:"updated_at"`
 }
 
+type AccountStock struct {
+	Id        string `json:"id"`
+	AccountId string `json:"account_id"`
+	StockId   string `json:"stock_id"`
+	Unit      string `json:"unit"`
+	Cost      string `json:"cost"`
+}
+
 type AssetProvider struct {
 	Id        string    `json:"id"`
 	Name      string    `json:"name"`

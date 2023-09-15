@@ -25,6 +25,18 @@ type StockRecord struct {
 	CurrentPrice string `json:"currentPrice"`
 }
 
+type StockHolding struct {
+	Id      string `json:"id"`
+	StockId string `json:"stockId"`
+	Unit    string `json:"unit"`
+	Cost    string `json:"cost"`
+}
+
+type StockHoldingRecord struct {
+	AccountId string         `json:"accountId"`
+	Holdings  []StockHolding `json:"holdings"`
+}
+
 type CreateNewStockHoldingRequestBody struct {
 	Unit      string `json:"unit"`
 	Cost      string `json:"cost"`
@@ -74,12 +86,46 @@ func (sh *StocksHandler) GetAllStocks(c echo.Context) error {
 			LooseJson{"success": false, "error": "Internal server error."},
 		)
 	}
+	sh.Logger.Debug(fmt.Sprintf("constructed response object - %#v", stockRecords), requestId)
 
 	return c.JSON(http.StatusOK, map[string]interface{}{"success": true, "data": stockRecords})
 }
 
 func (sh *StocksHandler) GetAllStockHoldings(c echo.Context) error {
-	return c.JSON(http.StatusOK, map[string]interface{}{"success": true, "data": ""})
+	clientId := c.Get("uid").(string)
+	requestId := zap.String("requestId", c.Get("requestId").(string))
+	sh.Logger.Info("starts", requestId)
+
+	// Get all stock holdings of user from database
+	accountStocks, getAccountStocksError := database.GetAllStockHoldings(sh.Db, clientId)
+	if getAccountStocksError != nil {
+		sh.Logger.Error(
+			fmt.Sprintf("failed to get all stock holdings from database. %s", getAccountStocksError.Error()),
+			requestId,
+		)
+		return c.JSON(
+			http.StatusInternalServerError,
+			LooseJson{"success": false, "error": "Internal server error."},
+		)
+	}
+	sh.Logger.Debug("got stock holdings from database", requestId)
+
+	// Construct the response object
+	accountStockHoldingsMap := make(map[string][]StockHolding)
+	for _, accountStock := range accountStocks {
+		stockHolding := StockHolding{Id: accountStock.Id, StockId: accountStock.StockId, Unit: accountStock.Unit, Cost: accountStock.Cost}
+		accountStockHoldingsMap[accountStock.AccountId] = append(accountStockHoldingsMap[accountStock.AccountId], stockHolding)
+	}
+	responseData := []StockHoldingRecord{}
+	for accountId, stockHoldings := range accountStockHoldingsMap {
+		responseData = append(responseData, StockHoldingRecord{
+			AccountId: accountId,
+			Holdings:  stockHoldings,
+		})
+	}
+	sh.Logger.Debug(fmt.Sprintf("constructed response object - %#v", responseData), requestId)
+
+	return c.JSON(http.StatusOK, map[string]interface{}{"success": true, "data": responseData})
 }
 
 func (sh *StocksHandler) CreateNewStockHolding(c echo.Context) error {

@@ -51,3 +51,12 @@ type ExchangeRate struct {
 	TargetCurrencyId string `json:"target_currency_id"`
 	Rate             string `json:"rate"`
 }
+
+type Stock struct {
+	Id           string `json:"id"`
+	CountryId    string `json:"country_id"`
+	CurrencyId   string `json:"currency_id"`
+	Name         string `json:"name"`
+	Ticker       string `json:"ticker"`
+	CurrentPrice string `json:"current_price"`
+}

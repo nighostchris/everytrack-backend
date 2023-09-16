@@ -73,3 +73,14 @@ func UpdateAccount(db *pgxpool.Pool, params UpdateAccountParams) (bool, error) {
 
 	return true, nil
 }
+
+func DeleteAccount(db *pgxpool.Pool, accountId string) (bool, error) {
+	query := "DELETE FROM everytrack_backend.account WHERE id = $1;"
+	_, deleteError := db.Exec(context.Background(), query, accountId)
+
+	if deleteError != nil {
+		return false, deleteError
+	}
+
+	return true, nil
+}

@@ -14,7 +14,7 @@ type CreateNewStockHoldingParams struct {
 }
 
 func GetAllStockHoldings(db *pgxpool.Pool, clientId string) ([]AccountStock, error) {
-	var accountStocks []AccountStock
+	accountStocks := []AccountStock{}
 	query := `SELECT accs.id, account_id, stock_id, unit, cost
 	FROM everytrack_backend.account_stock AS accs
 	INNER JOIN everytrack_backend.account AS a ON a.id = accs.account_id

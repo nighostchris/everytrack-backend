@@ -175,3 +175,74 @@ func (ah *AccountsHandler) UpdateAccount(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, LooseJson{"success": true})
 }
+
+func (ah *AccountsHandler) DeleteAccount(c echo.Context) error {
+	clientId := c.Get("uid").(string)
+	requestId := zap.String("requestId", c.Get("requestId").(string))
+	ah.Logger.Info("starts", requestId)
+
+	accountId := c.QueryParam("id")
+	if len(accountId) == 0 {
+		ah.Logger.Error("undefined account id", requestId)
+		return c.JSON(
+			http.StatusBadRequest,
+			LooseJson{"success": false, "error": "Undefined account id."},
+		)
+	}
+	providerType := c.QueryParam("type")
+	if len(providerType) == 0 {
+		ah.Logger.Error("undefined provider type", requestId)
+		return c.JSON(
+			http.StatusBadRequest,
+			LooseJson{"success": false, "error": "Undefined provider type."},
+		)
+	}
+	if !slices.Contains(ProviderTypes, providerType) {
+		ah.Logger.Error(fmt.Sprintf("invalid provider type %s", providerType), requestId)
+		return c.JSON(
+			http.StatusBadRequest,
+			LooseJson{"success": false, "error": "Invalid provider type."},
+		)
+	}
+	ah.Logger.Info(fmt.Sprintf("going to check if client owns the account with id %s", accountId), requestId)
+
+	// Get all client owned accounts in database
+	ownedAccounts, getOwnedAccountsError := database.GetAllAccountSummaryByType(ah.Db, providerType, clientId)
+	if getOwnedAccountsError != nil {
+		ah.Logger.Error(
+			fmt.Sprintf("failed to get all owned accounts from database. %s", getOwnedAccountsError.Error()),
+			requestId,
+		)
+		return c.JSON(
+			http.StatusInternalServerError,
+			LooseJson{"success": false, "error": "Internal server error."},
+		)
+	}
+	if len(ownedAccounts) == 0 {
+		ah.Logger.Error(
+			fmt.Sprintf("client does not own the account %s and not authorized to delete", accountId),
+			requestId,
+		)
+		return c.JSON(
+			http.StatusUnauthorized,
+			LooseJson{"success": false, "error": "Unauthorized to delete account."},
+		)
+	}
+	ah.Logger.Info(fmt.Sprintf("going to delete account with id %s", accountId), requestId)
+
+	// Delete account in database
+	_, deleteError := database.DeleteAccount(ah.Db, accountId)
+	if deleteError != nil {
+		ah.Logger.Error(
+			fmt.Sprintf("failed to delete account in database. %s", deleteError.Error()),
+			requestId,
+		)
+		return c.JSON(
+			http.StatusInternalServerError,
+			LooseJson{"success": false, "error": "Internal server error."},
+		)
+	}
+	ah.Logger.Debug("deleted account in database", requestId)
+
+	return c.JSON(http.StatusOK, LooseJson{"success": true})
+}

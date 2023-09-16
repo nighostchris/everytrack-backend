@@ -50,6 +50,7 @@ func (h *Handlers) BindRoutes(e *echo.Echo) {
 	accounts.PUT("", h.Accounts.UpdateAccount)
 	accounts.POST("", h.Accounts.CreateNewAccount)
 	accounts.GET("", h.Accounts.GetAllAccountsByType)
+	accounts.DELETE("", h.Accounts.DeleteAccount)
 	// ============================================================
 	// /v1/auth endpoints
 	// ============================================================

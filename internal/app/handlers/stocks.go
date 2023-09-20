@@ -46,6 +46,13 @@ type CreateNewStockHoldingRequestBody struct {
 	AccountId string `json:"accountId"`
 }
 
+type UpdateStockHoldingRequestBody struct {
+	Unit      string `json:"unit"`
+	Cost      string `json:"cost"`
+	StockId   string `json:"stockId"`
+	AccountId string `json:"accountId"`
+}
+
 func (sh *StocksHandler) GetAllStocks(c echo.Context) error {
 	requestId := zap.String("requestId", c.Get("requestId").(string))
 	sh.Logger.Info("starts", requestId)
@@ -168,6 +175,124 @@ func (sh *StocksHandler) CreateNewStockHolding(c echo.Context) error {
 		)
 	}
 	sh.Logger.Debug("created a new stock holding in database", requestId)
+
+	return c.JSON(http.StatusOK, LooseJson{"success": true})
+}
+
+func (sh *StocksHandler) UpdateStockHolding(c echo.Context) error {
+	data := new(UpdateStockHoldingRequestBody)
+	requestId := zap.String("requestId", c.Get("requestId").(string))
+	sh.Logger.Info("starts", requestId)
+
+	// Retrieve request body and validate with schema
+	if bindError := c.Bind(data); bindError != nil {
+		return c.JSON(
+			http.StatusBadRequest,
+			LooseJson{"success": false, "error": "Missing required fields"},
+		)
+	}
+
+	if validateError := c.Validate(data); validateError != nil {
+		var ve validator.ValidationErrors
+		if errors.As(validateError, &ve) {
+			return c.JSON(
+				http.StatusBadRequest,
+				LooseJson{"success": false, "error": fmt.Sprintf("Invalid field %s", strcase.ToLowerCamel(ve[0].Field()))},
+			)
+		}
+		sh.Logger.Error(fmt.Sprintf("invalid field. %s", validateError.Error()), requestId)
+		return c.JSON(
+			http.StatusBadRequest,
+			LooseJson{"success": false, "error": "Invalid field"},
+		)
+	}
+	sh.Logger.Debug("validated request parameters", requestId)
+
+	// Update account in database
+	_, updateError := database.UpdateStockHoldingCost(
+		sh.Db,
+		database.UpdateStockHoldingCostParams{
+			Unit:      data.Unit,
+			Cost:      data.Cost,
+			StockId:   data.StockId,
+			AccountId: data.AccountId,
+		},
+	)
+	if updateError != nil {
+		sh.Logger.Error(
+			fmt.Sprintf("failed to update stock holding in database. %s", updateError.Error()),
+			requestId,
+		)
+		return c.JSON(
+			http.StatusInternalServerError,
+			LooseJson{"success": false, "error": "Internal server error."},
+		)
+	}
+	sh.Logger.Debug("updated stock holding in database", requestId)
+
+	return c.JSON(http.StatusOK, LooseJson{"success": true})
+}
+
+func (sh *StocksHandler) DeleteStockHolding(c echo.Context) error {
+	clientId := c.Get("uid").(string)
+	requestId := zap.String("requestId", c.Get("requestId").(string))
+	sh.Logger.Info("starts", requestId)
+
+	accountStockId := c.QueryParam("id")
+	if len(accountStockId) == 0 {
+		sh.Logger.Error("undefined stock holding id", requestId)
+		return c.JSON(
+			http.StatusBadRequest,
+			LooseJson{"success": false, "error": "Undefined stock holding id."},
+		)
+	}
+	sh.Logger.Info(fmt.Sprintf("going to check if client owns the stock holding with id %s", accountStockId), requestId)
+
+	// Get all client owned stock holdings in database
+	ownedStockHoldings, getOwnedStockHoldingsError := database.GetAllStockHoldings(sh.Db, clientId)
+	if getOwnedStockHoldingsError != nil {
+		sh.Logger.Error(
+			fmt.Sprintf("failed to get all owned stock holdings from database. %s", getOwnedStockHoldingsError.Error()),
+			requestId,
+		)
+		return c.JSON(
+			http.StatusInternalServerError,
+			LooseJson{"success": false, "error": "Internal server error."},
+		)
+	}
+
+	// Check if client owns the stock holding
+	isOwner := false
+	for _, stockHolding := range ownedStockHoldings {
+		if stockHolding.Id == accountStockId {
+			isOwner = true
+		}
+	}
+	if len(ownedStockHoldings) == 0 || !isOwner {
+		sh.Logger.Error(
+			fmt.Sprintf("client does not own the stock holding %s and not authorized to delete", accountStockId),
+			requestId,
+		)
+		return c.JSON(
+			http.StatusUnauthorized,
+			LooseJson{"success": false, "error": "Unauthorized to delete stock holding."},
+		)
+	}
+	sh.Logger.Info(fmt.Sprintf("going to delete stock holding with id %s", accountStockId), requestId)
+
+	// Delete account in database
+	_, deleteError := database.DeleteStockHolding(sh.Db, accountStockId)
+	if deleteError != nil {
+		sh.Logger.Error(
+			fmt.Sprintf("failed to delete stock holding in database. %s", deleteError.Error()),
+			requestId,
+		)
+		return c.JSON(
+			http.StatusInternalServerError,
+			LooseJson{"success": false, "error": "Internal server error."},
+		)
+	}
+	sh.Logger.Debug("deleted stock holding in database", requestId)
 
 	return c.JSON(http.StatusOK, LooseJson{"success": true})
 }

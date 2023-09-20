@@ -7,10 +7,17 @@ import (
 )
 
 type CreateNewStockHoldingParams struct {
-	AccountId string `json:"account_id"`
-	StockId   string `json:"stock_id"`
 	Unit      string `json:"unit"`
 	Cost      string `json:"cost"`
+	StockId   string `json:"stock_id"`
+	AccountId string `json:"account_id"`
+}
+
+type UpdateStockHoldingCostParams struct {
+	Unit      string `json:"unit"`
+	Cost      string `json:"cost"`
+	StockId   string `json:"stock_id"`
+	AccountId string `json:"account_id"`
 }
 
 func GetAllStockHoldings(db *pgxpool.Pool, clientId string) ([]AccountStock, error) {
@@ -44,6 +51,28 @@ func CreateNewStockHolding(db *pgxpool.Pool, params CreateNewStockHoldingParams)
 
 	if createError != nil {
 		return false, createError
+	}
+
+	return true, nil
+}
+
+func UpdateStockHoldingCost(db *pgxpool.Pool, params UpdateStockHoldingCostParams) (bool, error) {
+	query := "UPDATE everytrack_backend.account_stock SET cost = $1, unit = $2 WHERE stock_id = $3 AND account_id = $4;"
+	_, updateError := db.Exec(context.Background(), query, params.Cost, params.Unit, params.StockId, params.AccountId)
+
+	if updateError != nil {
+		return false, updateError
+	}
+
+	return true, nil
+}
+
+func DeleteStockHolding(db *pgxpool.Pool, accountStockId string) (bool, error) {
+	query := "DELETE FROM everytrack_backend.account_stock WHERE id = $1;"
+	_, deleteError := db.Exec(context.Background(), query, accountStockId)
+
+	if deleteError != nil {
+		return false, deleteError
 	}
 
 	return true, nil

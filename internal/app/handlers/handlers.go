@@ -84,6 +84,8 @@ func (h *Handlers) BindRoutes(e *echo.Echo) {
 	// ============================================================
 	stocks := v1.Group("/stocks")
 	stocks.GET("", h.Stocks.GetAllStocks)
+	stocks.PUT("/holdings", h.Stocks.UpdateStockHolding)
 	stocks.GET("/holdings", h.Stocks.GetAllStockHoldings)
+	stocks.DELETE("/holdings", h.Stocks.DeleteStockHolding)
 	stocks.POST("/holdings", h.Stocks.CreateNewStockHolding)
 }

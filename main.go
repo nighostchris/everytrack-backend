@@ -3,14 +3,13 @@ package main
 import (
 	"fmt"
 	"os"
-	"time"
 
+	"github.com/nighostchris/everytrack-backend/internal/app/cron"
 	"github.com/nighostchris/everytrack-backend/internal/app/handlers"
 	"github.com/nighostchris/everytrack-backend/internal/config"
 	"github.com/nighostchris/everytrack-backend/internal/connections/postgres"
 	"github.com/nighostchris/everytrack-backend/internal/connections/server"
 	"github.com/nighostchris/everytrack-backend/internal/logger"
-	"github.com/nighostchris/everytrack-backend/internal/tools"
 )
 
 func main() {
@@ -27,14 +26,10 @@ func main() {
 	handlers := handlers.Init(db, env, logger)
 	handlers.BindRoutes(app)
 
-	// Fetch exchange rates from Github Currency API every day
-	tool := tools.GithubCurrencyApi{Db: db, Logger: logger}
-	go func() {
-		for {
-			tool.FetchLatestExchangeRates()
-			time.Sleep(24 * time.Hour)
-		}
-	}()
+	// Initialize cron jobs
+	cronJobs := cron.Init(db, env, logger)
+	cronJobs.SubscribeExchangeRates()
+	cronJobs.SubscribeTwelveDataFinancialData()
 
 	// Start web server
 	if initWebServerError := app.Start(fmt.Sprintf("%s:%d", env.WebServerHost, env.WebServerPort)); initWebServerError != nil {

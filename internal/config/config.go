@@ -21,6 +21,8 @@ type Config struct {
 	AccessTokenSecret string `env:"ACCESS_TOKEN_SECRET,notEmpty"`
 	// Logger
 	LogLevel string `env:"LOG_LEVEL,notEmpty"`
+	// External API
+	TwelveDataApiKey string `env:"TWELVE_DATA_API_KEY,notEmpty"`
 }
 
 func New() *Config {

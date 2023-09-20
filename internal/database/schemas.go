@@ -47,6 +47,12 @@ type Client struct {
 	UpdatedAt  time.Time `json:"updated_at"`
 }
 
+type Country struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+	Code string `json:"code"`
+}
+
 type Currency struct {
 	Id     string `json:"id"`
 	Ticker string `json:"ticker"`

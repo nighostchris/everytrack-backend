@@ -25,6 +25,7 @@ type AssetProvider struct {
 	Name      string    `json:"name"`
 	Icon      string    `json:"icon"`
 	Type      string    `json:"type"`
+	CountryId string    `json:"country_id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }

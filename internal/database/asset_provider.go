@@ -7,18 +7,15 @@ import (
 )
 
 type ProviderDetail struct {
-	Name            string `json:"name"`
-	Icon            string `json:"icon"`
-	AccountTypeId   string `json:"account_type_id"`
-	AccountTypeName string `json:"account_type_name"`
+	Id        string `json:"id"`
+	Name      string `json:"name"`
+	Icon      string `json:"icon"`
+	CountryId string `json:"countryId"`
 }
 
 func GetAllProvidersByType(db *pgxpool.Pool, providerType string) ([]ProviderDetail, error) {
 	var providerDetails []ProviderDetail
-	query := `SELECT ap.name, ap.icon, apat.id as account_type_id, apat.name as account_type_name
-	FROM everytrack_backend.asset_provider AS ap
-	INNER JOIN everytrack_backend.asset_provider_account_type AS apat ON ap.id = apat.asset_provider_id
-	WHERE ap.type = $1;`
+	query := `SELECT id, name, icon, country_id FROM everytrack_backend.asset_provider WHERE type = $1;`
 	rows, queryError := db.Query(context.Background(), query, providerType)
 	if queryError != nil {
 		return []ProviderDetail{}, queryError
@@ -28,7 +25,12 @@ func GetAllProvidersByType(db *pgxpool.Pool, providerType string) ([]ProviderDet
 
 	for rows.Next() {
 		var providerDetail ProviderDetail
-		scanError := rows.Scan(&providerDetail.Name, &providerDetail.Icon, &providerDetail.AccountTypeId, &providerDetail.AccountTypeName)
+		scanError := rows.Scan(
+			&providerDetail.Id,
+			&providerDetail.Name,
+			&providerDetail.Icon,
+			&providerDetail.CountryId,
+		)
 		if scanError != nil {
 			return []ProviderDetail{}, scanError
 		}

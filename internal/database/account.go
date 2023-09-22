@@ -7,16 +7,19 @@ import (
 )
 
 type AccountSummary struct {
-	Id            string `json:"id"`
-	Balance       string `json:"balance"`
-	CurrencyId    string `json:"currencyId"`
-	AccountTypeId string `json:"accountTypeId"`
+	Id              string `json:"id"`
+	Name            string `json:"name"`
+	Balance         string `json:"balance"`
+	CurrencyId      string `json:"currencyId"`
+	AccountTypeId   string `json:"accountTypeId"`
+	AssetProviderId string `json:"assetProviderId"`
 }
 
 type CreateNewAccountParams struct {
-	ClientId      string `json:"client_id"`
-	CurrencyId    string `json:"currency_id"`
-	AccountTypeId string `json:"account_type_id"`
+	Name            string `json:"name"`
+	ClientId        string `json:"client_id"`
+	CurrencyId      string `json:"currency_id"`
+	AssetProviderId string `json:"asset_provider_id"`
 }
 
 type UpdateAccountParams struct {
@@ -27,7 +30,7 @@ type UpdateAccountParams struct {
 
 func GetAllAccountSummaryByType(db *pgxpool.Pool, providerType string, clientId string) ([]AccountSummary, error) {
 	accountSummary := []AccountSummary{}
-	query := `SELECT a.id, a.balance, apat.id as account_type_id, c.id as currency_id
+	query := `SELECT a.id, a.balance, apat.name, ap.id as asset_provider_id, apat.id as account_type_id, c.id as currency_id
 	FROM everytrack_backend.account AS a
 	INNER JOIN everytrack_backend.asset_provider_account_type AS apat ON a.asset_provider_account_type_id = apat.id
 	INNER JOIN everytrack_backend.asset_provider AS ap ON apat.asset_provider_id = ap.id
@@ -42,7 +45,14 @@ func GetAllAccountSummaryByType(db *pgxpool.Pool, providerType string, clientId 
 
 	for rows.Next() {
 		var summary AccountSummary
-		scanError := rows.Scan(&summary.Id, &summary.Balance, &summary.AccountTypeId, &summary.CurrencyId)
+		scanError := rows.Scan(
+			&summary.Id,
+			&summary.Balance,
+			&summary.Name,
+			&summary.AssetProviderId,
+			&summary.AccountTypeId,
+			&summary.CurrencyId,
+		)
 		if scanError != nil {
 			return []AccountSummary{}, scanError
 		}
@@ -53,11 +63,21 @@ func GetAllAccountSummaryByType(db *pgxpool.Pool, providerType string, clientId 
 }
 
 func CreateNewAccount(db *pgxpool.Pool, params CreateNewAccountParams) (bool, error) {
-	query := "INSERT INTO everytrack_backend.account (client_id, asset_provider_account_type_id, currency_id, balance) VALUES ($1, $2, $3, $4);"
-	_, createError := db.Exec(context.Background(), query, params.ClientId, params.AccountTypeId, params.CurrencyId, "0")
+	// Create new asset provider account type first
+	var assetProviderAccountTypeId string
+	insertAccountTypeQuery := "INSERT INTO everytrack_backend.asset_provider_account_type (asset_provider_id, name) VALUES ($1, $2) RETURNING id;"
+	insertAccountTypeError := db.QueryRow(context.Background(), insertAccountTypeQuery, params.AssetProviderId, params.Name).Scan(&assetProviderAccountTypeId)
 
-	if createError != nil {
-		return false, createError
+	if insertAccountTypeError != nil {
+		return false, insertAccountTypeError
+	}
+
+	// Create new account using the newly created account type id above
+	insertAccountQuery := "INSERT INTO everytrack_backend.account (client_id, asset_provider_account_type_id, currency_id, balance) VALUES ($1, $2, $3, $4);"
+	_, insertAccountError := db.Exec(context.Background(), insertAccountQuery, params.ClientId, assetProviderAccountTypeId, params.CurrencyId, "0")
+
+	if insertAccountError != nil {
+		return false, insertAccountError
 	}
 
 	return true, nil

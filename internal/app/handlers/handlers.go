@@ -48,9 +48,9 @@ func (h *Handlers) BindRoutes(e *echo.Echo) {
 	// ============================================================
 	accounts := v1.Group("/accounts")
 	accounts.PUT("", h.Accounts.UpdateAccount)
+	accounts.DELETE("", h.Accounts.DeleteAccount)
 	accounts.POST("", h.Accounts.CreateNewAccount)
 	accounts.GET("", h.Accounts.GetAllAccountsByType)
-	accounts.DELETE("", h.Accounts.DeleteAccount)
 	// ============================================================
 	// /v1/auth endpoints
 	// ============================================================

@@ -16,15 +16,11 @@ type ProvidersHandler struct {
 	Logger *zap.Logger
 }
 
-type AccountType struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
-}
-
 type ProviderDetailsRecord struct {
-	Name         string        `json:"name"`
-	Icon         string        `json:"icon"`
-	AccountTypes []AccountType `json:"accountTypes"`
+	Id        string `json:"id"`
+	Name      string `json:"name"`
+	Icon      string `json:"icon"`
+	CountryId string `json:"countryid"`
 }
 
 var ProviderTypes = []string{"savings", "broker", "credit"}
@@ -62,28 +58,10 @@ func (ph *ProvidersHandler) GetAllProvidersByType(c echo.Context) error {
 			LooseJson{"success": false, "error": "Internal server error."},
 		)
 	}
-	ph.Logger.Debug("got providers from database", requestId)
-
-	// Construct the response object
-	providerDetailsMap := make(map[string][]AccountType)
-	providerIconMap := make(map[string]string)
-	for _, providerDetail := range providerDetails {
-		accountType := AccountType{Id: providerDetail.AccountTypeId, Name: providerDetail.AccountTypeName}
-		providerDetailsMap[providerDetail.Name] = append(providerDetailsMap[providerDetail.Name], accountType)
-		providerIconMap[providerDetail.Name] = providerDetail.Icon
-	}
-	responseData := []ProviderDetailsRecord{}
-	for providerName, accountTypes := range providerDetailsMap {
-		responseData = append(responseData, ProviderDetailsRecord{
-			Name:         providerName,
-			Icon:         providerIconMap[providerName],
-			AccountTypes: accountTypes,
-		})
-	}
-	ph.Logger.Debug(fmt.Sprintf("constructed response object - %#v", responseData), requestId)
+	ph.Logger.Debug(fmt.Sprintf("got providers from database - %#v", providerDetails), requestId)
 
 	return c.JSON(
 		http.StatusOK,
-		LooseJson{"success": true, "data": responseData},
+		LooseJson{"success": true, "data": providerDetails},
 	)
 }

@@ -20,8 +20,9 @@ type AccountsHandler struct {
 }
 
 type CreateNewAccountRequestBody struct {
-	CurrencyId    string `json:"currencyId"`
-	AccountTypeId string `json:"accountTypeId"`
+	Name            string `json:"name"`
+	CurrencyId      string `json:"currencyId"`
+	AssetProviderId string `json:"assetProviderId"`
 }
 
 type UpdateAccountRequestBody struct {
@@ -103,9 +104,10 @@ func (ah *AccountsHandler) CreateNewAccount(c echo.Context) error {
 	_, createError := database.CreateNewAccount(
 		ah.Db,
 		database.CreateNewAccountParams{
-			ClientId:      clientId,
-			CurrencyId:    data.CurrencyId,
-			AccountTypeId: data.AccountTypeId,
+			ClientId:        clientId,
+			Name:            data.Name,
+			CurrencyId:      data.CurrencyId,
+			AssetProviderId: data.AssetProviderId,
 		},
 	)
 	if createError != nil {

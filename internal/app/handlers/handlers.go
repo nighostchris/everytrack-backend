@@ -16,6 +16,7 @@ type Handlers struct {
 	Accounts      *AccountsHandler
 	Settings      *SettingsHandler
 	Providers     *ProvidersHandler
+	Countries     *CountriesHandler
 	Currencies    *CurrenciesHandler
 	ExchangeRates *ExchangeRatesHandler
 }
@@ -28,6 +29,7 @@ func Init(db *pgxpool.Pool, env *config.Config, logger *zap.Logger) *Handlers {
 		Settings:      &SettingsHandler{Db: db, Logger: logger},
 		Accounts:      &AccountsHandler{Db: db, Logger: logger},
 		Providers:     &ProvidersHandler{Db: db, Logger: logger},
+		Countries:     &CountriesHandler{Db: db, Logger: logger},
 		Currencies:    &CurrenciesHandler{Db: db, Logger: logger},
 		ExchangeRates: &ExchangeRatesHandler{Db: db, Logger: logger},
 		Auth:          &AuthHandler{Db: db, Logger: logger, TokenUtils: &utils.TokenUtils{Env: env, Logger: logger}},
@@ -59,10 +61,15 @@ func (h *Handlers) BindRoutes(e *echo.Echo) {
 	auth.POST("/signup", h.Auth.Signup)
 	auth.POST("/verify", h.Auth.Verify)
 	// ============================================================
+	// /v1/countries endpoints
+	// ============================================================
+	countries := v1.Group("/countries")
+	countries.GET("", h.Countries.GetAllCountries)
+	// ============================================================
 	// /v1/currency endpoints
 	// ============================================================
-	currency := v1.Group("/currencies")
-	currency.GET("", h.Currencies.GetAllCurrencies)
+	currencies := v1.Group("/currencies")
+	currencies.GET("", h.Currencies.GetAllCurrencies)
 	// ============================================================
 	// /v1/exrates endpoints
 	// ============================================================

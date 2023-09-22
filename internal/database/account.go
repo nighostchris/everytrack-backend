@@ -95,11 +95,36 @@ func UpdateAccount(db *pgxpool.Pool, params UpdateAccountParams) (bool, error) {
 }
 
 func DeleteAccount(db *pgxpool.Pool, accountId string) (bool, error) {
+	// Retrieve relevant asset_provider_account_type from database
+	var accountTypeId string
+	getAccountTypeIdQuery := `SELECT asset_provider_account_type_id FROM everytrack_backend.account WHERE id = $1;`
+	getAccountTypeIdError := db.QueryRow(context.Background(), getAccountTypeIdQuery, accountId).Scan(&accountTypeId)
+	if getAccountTypeIdError != nil {
+		return false, getAccountTypeIdError
+	}
+
+	// Delete relevant account_stock records from database
+	deleteStockHoldingsQuery := "DELETE FROM everytrack_backend.account_stock WHERE account_id = $1;"
+	_, deleteStockHoldingsError := db.Exec(context.Background(), deleteStockHoldingsQuery, accountId)
+
+	if deleteStockHoldingsError != nil {
+		return false, deleteStockHoldingsError
+	}
+
+	// Delete account from database
 	query := "DELETE FROM everytrack_backend.account WHERE id = $1;"
 	_, deleteError := db.Exec(context.Background(), query, accountId)
 
 	if deleteError != nil {
 		return false, deleteError
+	}
+
+	// Delete relevant asset_provider_account_type from database since it's 1-1 relationship
+	deleteAccountTypeQuery := "DELETE FROM everytrack_backend.asset_provider_account_type WHERE id = $1;"
+	_, deleteAccountTypeError := db.Exec(context.Background(), deleteAccountTypeQuery, accountTypeId)
+
+	if deleteAccountTypeError != nil {
+		return false, deleteAccountTypeError
 	}
 
 	return true, nil

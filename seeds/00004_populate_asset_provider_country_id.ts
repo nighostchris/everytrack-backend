@@ -26,7 +26,7 @@ export async function seed(knex: Knex): Promise<void> {
         name: "Chase Bank",
         icon: "/chase_bank_uk.svg",
         type: "savings",
-        country_id: countriesMap["US"],
+        country_id: countriesMap["UK"],
       },
       {
         name: "HSBC",

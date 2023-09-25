@@ -76,6 +76,7 @@ func (h *Handlers) BindRoutes(e *echo.Echo) {
 	// /v1/expenses endpoints
 	// ============================================================
 	expenses := v1.Group("/expenses")
+	expenses.GET("", h.Expenses.GetAllExpenses)
 	expenses.POST("", h.Expenses.CreateNewExpense)
 	// ============================================================
 	// /v1/exrates endpoints

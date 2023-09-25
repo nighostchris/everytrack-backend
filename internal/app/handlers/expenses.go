@@ -21,6 +21,15 @@ type ExpensesHandler struct {
 	Logger *zap.Logger
 }
 
+type ExpenseRecord struct {
+	Amount     string  `json:"amount"`
+	Remarks    string  `json:"remarks"`
+	Category   string  `json:"category"`
+	AccountId  *string `json:"accountId"`
+	ExecutedAt int64   `json:"executedAt"`
+	CurrencyId string  `json:"currencyId"`
+}
+
 type CreateNewExpenseRequestBody struct {
 	Amount     string `json:"amount"`
 	Remarks    string `json:"remarks"`
@@ -28,6 +37,45 @@ type CreateNewExpenseRequestBody struct {
 	AccountId  string `json:"accountId"`
 	CurrencyId string `json:"currencyId"`
 	ExecutedAt int64  `json:"executedAt"`
+}
+
+func (eh *ExpensesHandler) GetAllExpenses(c echo.Context) error {
+	clientId := c.Get("uid").(string)
+	requestId := zap.String("requestId", c.Get("requestId").(string))
+	eh.Logger.Info("starts", requestId)
+
+	// Get all expenses from database
+	expenses, getExpensesError := database.GetAllExpenses(eh.Db, clientId)
+	if getExpensesError != nil {
+		eh.Logger.Error(
+			fmt.Sprintf("failed to get all expense records from database. %s", getExpensesError.Error()),
+			requestId,
+		)
+		return c.JSON(
+			http.StatusInternalServerError,
+			LooseJson{"success": false, "error": "Internal server error."},
+		)
+	}
+	eh.Logger.Debug("got expense records from database", requestId)
+
+	// Construct the response object
+	var expenseRecords []ExpenseRecord
+	for _, expense := range expenses {
+		record := ExpenseRecord{
+			Amount:     expense.Amount,
+			Category:   expense.Category,
+			CurrencyId: expense.CurrencyId,
+			Remarks:    expense.Remarks.String,
+			ExecutedAt: expense.ExecutedAt.Unix(),
+		}
+		if len(expense.AccountId.String) > 0 {
+			record.AccountId = &expense.AccountId.String
+		}
+		expenseRecords = append(expenseRecords, record)
+	}
+	eh.Logger.Debug(fmt.Sprintf("constructed response object - %#v", expenseRecords), requestId)
+
+	return c.JSON(http.StatusOK, LooseJson{"success": true, "data": expenseRecords})
 }
 
 func (eh *ExpensesHandler) CreateNewExpense(c echo.Context) error {

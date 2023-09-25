@@ -1,6 +1,9 @@
 package database
 
-import "time"
+import (
+	"database/sql"
+	"time"
+)
 
 type Account struct {
 	Id                         string    `json:"id"`
@@ -68,14 +71,14 @@ type ExchangeRate struct {
 }
 
 type Expense struct {
-	Id         string    `json:"id"`
-	ClientId   string    `json:"client_id"`
-	AccountId  string    `json:"account_id"`
-	CurrencyId string    `json:"currency_id"`
-	Category   string    `json:"category"`
-	Amount     string    `json:"amount"`
-	Remarks    string    `json:"remarks"`
-	ExecutedAt time.Time `json:"executed_at"`
+	Id         string         `json:"id"`
+	ClientId   string         `json:"client_id"`
+	AccountId  sql.NullString `json:"account_id"`
+	CurrencyId string         `json:"currency_id"`
+	Category   string         `json:"category"`
+	Amount     string         `json:"amount"`
+	Remarks    sql.NullString `json:"remarks"`
+	ExecutedAt time.Time      `json:"executed_at"`
 }
 
 type Stock struct {

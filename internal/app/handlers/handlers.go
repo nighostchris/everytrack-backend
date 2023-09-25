@@ -13,6 +13,7 @@ import (
 type Handlers struct {
 	Auth          *AuthHandler
 	Stocks        *StocksHandler
+	Expenses      *ExpensesHandler
 	Accounts      *AccountsHandler
 	Settings      *SettingsHandler
 	Providers     *ProvidersHandler
@@ -26,6 +27,7 @@ type LooseJson map[string]interface{}
 func Init(db *pgxpool.Pool, env *config.Config, logger *zap.Logger) *Handlers {
 	return &Handlers{
 		Stocks:        &StocksHandler{Db: db, Logger: logger},
+		Expenses:      &ExpensesHandler{Db: db, Logger: logger},
 		Settings:      &SettingsHandler{Db: db, Logger: logger},
 		Accounts:      &AccountsHandler{Db: db, Logger: logger},
 		Providers:     &ProvidersHandler{Db: db, Logger: logger},
@@ -70,6 +72,11 @@ func (h *Handlers) BindRoutes(e *echo.Echo) {
 	// ============================================================
 	currencies := v1.Group("/currencies")
 	currencies.GET("", h.Currencies.GetAllCurrencies)
+	// ============================================================
+	// /v1/expenses endpoints
+	// ============================================================
+	expenses := v1.Group("/expenses")
+	expenses.POST("", h.Expenses.CreateNewExpense)
 	// ============================================================
 	// /v1/exrates endpoints
 	// ============================================================

@@ -67,6 +67,17 @@ type ExchangeRate struct {
 	Rate             string `json:"rate"`
 }
 
+type Expense struct {
+	Id         string    `json:"id"`
+	ClientId   string    `json:"client_id"`
+	AccountId  string    `json:"account_id"`
+	CurrencyId string    `json:"currency_id"`
+	Category   string    `json:"category"`
+	Amount     string    `json:"amount"`
+	Remarks    string    `json:"remarks"`
+	ExecutedAt time.Time `json:"executed_at"`
+}
+
 type Stock struct {
 	Id           string `json:"id"`
 	CountryId    string `json:"country_id"`

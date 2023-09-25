@@ -62,6 +62,17 @@ func GetAllAccountSummaryByType(db *pgxpool.Pool, providerType string, clientId 
 	return accountSummary, nil
 }
 
+func GetAccountBalance(db *pgxpool.Pool, accountId string) (string, error) {
+	var balance string
+	getBalanceQuery := `SELECT balance FROM everytrack_backend.account WHERE id = $1;`
+	getBalanceError := db.QueryRow(context.Background(), getBalanceQuery, accountId).Scan(&balance)
+	if getBalanceError != nil {
+		return balance, getBalanceError
+	}
+
+	return balance, nil
+}
+
 func CreateNewAccount(db *pgxpool.Pool, params CreateNewAccountParams) (bool, error) {
 	// Create new asset provider account type first
 	var assetProviderAccountTypeId string

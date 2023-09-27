@@ -100,6 +100,32 @@ func (ah *AccountsHandler) CreateNewAccount(c echo.Context) error {
 	}
 	ah.Logger.Debug("validated request parameters", requestId)
 
+	// Check if account name in use already
+	accountNameInUse, checkExistingAccountError := database.CheckExistingAccount(
+		ah.Db,
+		database.CheckExistingAccountParams{
+			Name:            data.Name,
+			ClientId:        clientId,
+			AssetProviderId: data.AssetProviderId,
+		},
+	)
+	if checkExistingAccountError != nil {
+		ah.Logger.Error(
+			fmt.Sprintf("failed to check existing account in database. %s", checkExistingAccountError.Error()),
+			requestId,
+		)
+		return c.JSON(
+			http.StatusInternalServerError,
+			LooseJson{"success": false, "error": "Internal server error."},
+		)
+	}
+	if accountNameInUse {
+		return c.JSON(
+			http.StatusConflict,
+			LooseJson{"success": false, "error": "Account name already in use."},
+		)
+	}
+
 	// Create a new account in database
 	_, createError := database.CreateNewAccount(
 		ah.Db,

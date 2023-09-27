@@ -1,0 +1,2 @@
+ALTER TABLE everytrack_backend.asset_provider_account_type
+DROP CONSTRAINT IF EXISTS asset_provider_account_type_asset_provider_id_name_key;

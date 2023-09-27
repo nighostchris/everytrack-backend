@@ -1,0 +1,2 @@
+ALTER TABLE everytrack_backend.asset_provider_account_type
+ADD CONSTRAINT asset_provider_account_type_asset_provider_id_name_key UNIQUE(asset_provider_id, name);

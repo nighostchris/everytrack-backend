@@ -15,6 +15,12 @@ type AccountSummary struct {
 	AssetProviderId string `json:"assetProviderId"`
 }
 
+type CheckExistingAccountParams struct {
+	Name            string `json:"name"`
+	ClientId        string `json:"client_id"`
+	AssetProviderId string `json:"asset_provider_id"`
+}
+
 type CreateNewAccountParams struct {
 	Name            string `json:"name"`
 	ClientId        string `json:"client_id"`
@@ -71,6 +77,24 @@ func GetAccountBalance(db *pgxpool.Pool, accountId string) (string, error) {
 	}
 
 	return balance, nil
+}
+
+func CheckExistingAccount(db *pgxpool.Pool, params CheckExistingAccountParams) (bool, error) {
+	var existingRowCount int
+	query := `SELECT count(*)
+	FROM everytrack_backend.asset_provider_account_type as apat
+	INNER JOIN everytrack_backend.account as acc ON acc.asset_provider_account_type_id = apat.id
+	WHERE apat.name = $1 AND acc.client_id = $2 AND apat.asset_provider_id = $3;`
+	queryError := db.QueryRow(context.Background(), query, params.Name, params.ClientId, params.AssetProviderId).Scan(&existingRowCount)
+	if queryError != nil {
+		return false, queryError
+	}
+
+	if existingRowCount > 0 {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func CreateNewAccount(db *pgxpool.Pool, params CreateNewAccountParams) (bool, error) {

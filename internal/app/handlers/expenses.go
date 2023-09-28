@@ -22,6 +22,7 @@ type ExpensesHandler struct {
 }
 
 type ExpenseRecord struct {
+	Name       string  `json:"name"`
 	Amount     string  `json:"amount"`
 	Remarks    string  `json:"remarks"`
 	Category   string  `json:"category"`
@@ -31,6 +32,7 @@ type ExpenseRecord struct {
 }
 
 type CreateNewExpenseRequestBody struct {
+	Name       string `json:"name"`
 	Amount     string `json:"amount"`
 	Remarks    string `json:"remarks"`
 	Category   string `json:"category"`
@@ -62,6 +64,7 @@ func (eh *ExpensesHandler) GetAllExpenses(c echo.Context) error {
 	var expenseRecords []ExpenseRecord
 	for _, expense := range expenses {
 		record := ExpenseRecord{
+			Name:       expense.Name,
 			Amount:     expense.Amount,
 			Category:   expense.Category,
 			CurrencyId: expense.CurrencyId,
@@ -110,6 +113,7 @@ func (eh *ExpensesHandler) CreateNewExpense(c echo.Context) error {
 
 	// Construct database query parameters
 	createNewExpenseDbParams := database.CreateNewExpenseParams{
+		Name:       data.Name,
 		Amount:     data.Amount,
 		ClientId:   clientId,
 		Category:   data.Category,

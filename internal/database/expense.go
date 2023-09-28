@@ -8,6 +8,7 @@ import (
 )
 
 type CreateNewExpenseParams struct {
+	Name       string    `json:"name"`
 	Amount     string    `json:"amount"`
 	Remarks    *string   `json:"remarks"`
 	Category   string    `json:"category"`
@@ -19,7 +20,7 @@ type CreateNewExpenseParams struct {
 
 func GetAllExpenses(db *pgxpool.Pool, clientId string) ([]Expense, error) {
 	expenses := []Expense{}
-	query := `SELECT currency_id, category, amount, remarks, executed_at FROM everytrack_backend.expense WHERE client_id = $1;`
+	query := `SELECT name, currency_id, category, amount, remarks, executed_at FROM everytrack_backend.expense WHERE client_id = $1;`
 	rows, queryError := db.Query(context.Background(), query, clientId)
 	if queryError != nil {
 		return expenses, queryError
@@ -29,7 +30,7 @@ func GetAllExpenses(db *pgxpool.Pool, clientId string) ([]Expense, error) {
 
 	for rows.Next() {
 		var expense Expense
-		scanError := rows.Scan(&expense.CurrencyId, &expense.Category, &expense.Amount, &expense.Remarks, &expense.ExecutedAt)
+		scanError := rows.Scan(&expense.Name, &expense.CurrencyId, &expense.Category, &expense.Amount, &expense.Remarks, &expense.ExecutedAt)
 		if scanError != nil {
 			return expenses, scanError
 		}
@@ -40,13 +41,14 @@ func GetAllExpenses(db *pgxpool.Pool, clientId string) ([]Expense, error) {
 }
 
 func CreateNewExpense(db *pgxpool.Pool, params CreateNewExpenseParams) (bool, error) {
-	query := "INSERT INTO everytrack_backend.expense (client_id, account_id, currency_id, category, amount, remarks, executed_at) VALUES ($1, $2, $3, $4, $5, $6, $7);"
+	query := "INSERT INTO everytrack_backend.expense (client_id, account_id, currency_id, name, category, amount, remarks, executed_at) VALUES ($1, $2, $3, $4, $5, $6, $7);"
 	_, createError := db.Exec(
 		context.Background(),
 		query,
 		params.ClientId,
 		params.AccountId,
 		params.CurrencyId,
+		params.Name,
 		params.Category,
 		params.Amount,
 		params.Remarks,

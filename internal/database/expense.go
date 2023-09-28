@@ -41,7 +41,7 @@ func GetAllExpenses(db *pgxpool.Pool, clientId string) ([]Expense, error) {
 }
 
 func CreateNewExpense(db *pgxpool.Pool, params CreateNewExpenseParams) (bool, error) {
-	query := "INSERT INTO everytrack_backend.expense (client_id, account_id, currency_id, name, category, amount, remarks, executed_at) VALUES ($1, $2, $3, $4, $5, $6, $7);"
+	query := "INSERT INTO everytrack_backend.expense (client_id, account_id, currency_id, name, category, amount, remarks, executed_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8);"
 	_, createError := db.Exec(
 		context.Background(),
 		query,

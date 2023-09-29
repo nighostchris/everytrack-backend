@@ -129,6 +129,17 @@ func UpdateAccount(db *pgxpool.Pool, params UpdateAccountParams) (bool, error) {
 	return true, nil
 }
 
+func UpdateAccountBalance(db *pgxpool.Pool, balance string, accountId string) (bool, error) {
+	query := "UPDATE everytrack_backend.account SET balance = $1 WHERE id = $2;"
+	_, updateError := db.Exec(context.Background(), query, balance, accountId)
+
+	if updateError != nil {
+		return false, updateError
+	}
+
+	return true, nil
+}
+
 func DeleteAccount(db *pgxpool.Pool, accountId string) (bool, error) {
 	// Retrieve relevant asset_provider_account_type from database
 	var accountTypeId string

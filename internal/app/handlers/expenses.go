@@ -146,22 +146,28 @@ func (eh *ExpensesHandler) CreateNewExpense(c echo.Context) error {
 				LooseJson{"success": false, "error": "Internal server error."},
 			)
 		}
+
+		// Converting balance to float number
 		balanceInFloat, parseBalanceError := strconv.ParseFloat(accountBalance, 64)
 		if parseBalanceError != nil {
-			eh.Logger.Error(fmt.Sprintf("failed to parse balance into float. %s", parseBalanceError.Error()))
+			eh.Logger.Error(fmt.Sprintf("failed to parse balance into float. %s", parseBalanceError.Error()), requestId)
 			return c.JSON(
 				http.StatusInternalServerError,
 				LooseJson{"success": false, "error": "Internal server error."},
 			)
 		}
+
+		// Converting amount to float number
 		amountInFloat, parseAmountError := strconv.ParseFloat(data.Amount, 64)
 		if parseAmountError != nil {
-			eh.Logger.Error(fmt.Sprintf("failed to parse amount into float. %s", parseAmountError.Error()))
+			eh.Logger.Error(fmt.Sprintf("failed to parse amount into float. %s", parseAmountError.Error()), requestId)
 			return c.JSON(
 				http.StatusInternalServerError,
 				LooseJson{"success": false, "error": "Internal server error."},
 			)
 		}
+
+		// Compare balance with amount
 		balanceComparison := big.NewFloat(amountInFloat).Cmp(big.NewFloat(balanceInFloat))
 		if balanceComparison == 1 {
 			return c.JSON(
@@ -169,7 +175,31 @@ func (eh *ExpensesHandler) CreateNewExpense(c echo.Context) error {
 				LooseJson{"success": false, "error": "Insufficient account balance."},
 			)
 		}
-		eh.Logger.Debug(fmt.Sprintf("sufficient balance in account %s to pay the expense amount", *createNewExpenseDbParams.AccountId))
+		eh.Logger.Debug(
+			fmt.Sprintf("sufficient balance in account %s to pay the expense amount", *createNewExpenseDbParams.AccountId),
+			requestId,
+		)
+
+		// Calculate the final account balance after spending the expense amount
+		negativeAmount := big.NewFloat(0).Neg(big.NewFloat(amountInFloat))
+		newAccountBalance := big.NewFloat(0).Add(big.NewFloat((balanceInFloat)), negativeAmount)
+		newAccountBalanceInFloat, _ := newAccountBalance.Float64()
+
+		_, updateAccountBalanceError := database.UpdateAccountBalance(
+			eh.Db,
+			strconv.FormatFloat(newAccountBalanceInFloat, 'f', -1, 64),
+			*createNewExpenseDbParams.AccountId,
+		)
+		if updateAccountBalanceError != nil {
+			eh.Logger.Error(
+				fmt.Sprintf("failed to update latest balance after deducting expense amount. %s", updateAccountBalanceError.Error()),
+				requestId,
+			)
+			return c.JSON(
+				http.StatusInternalServerError,
+				LooseJson{"success": false, "error": "Internal server error."},
+			)
+		}
 	}
 	eh.Logger.Debug("going to create new expense record in database")
 

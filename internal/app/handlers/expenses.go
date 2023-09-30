@@ -22,6 +22,7 @@ type ExpensesHandler struct {
 }
 
 type ExpenseRecord struct {
+	Id         string  `json:"id"`
 	Name       string  `json:"name"`
 	Amount     string  `json:"amount"`
 	Remarks    string  `json:"remarks"`
@@ -64,6 +65,7 @@ func (eh *ExpensesHandler) GetAllExpenses(c echo.Context) error {
 	var expenseRecords []ExpenseRecord
 	for _, expense := range expenses {
 		record := ExpenseRecord{
+			Id:         expense.Id,
 			Name:       expense.Name,
 			Amount:     expense.Amount,
 			Category:   expense.Category,
@@ -216,6 +218,103 @@ func (eh *ExpensesHandler) CreateNewExpense(c echo.Context) error {
 		)
 	}
 	eh.Logger.Debug("created a new expense record in database", requestId)
+
+	return c.JSON(http.StatusOK, LooseJson{"success": true})
+}
+
+func (eh *ExpensesHandler) DeleteExpense(c echo.Context) error {
+	clientId := c.Get("uid").(string)
+	requestId := zap.String("requestId", c.Get("requestId").(string))
+	eh.Logger.Info("starts", requestId)
+
+	expenseId := c.QueryParam("id")
+	if len(expenseId) == 0 {
+		eh.Logger.Error("undefined expense id", requestId)
+		return c.JSON(
+			http.StatusBadRequest,
+			LooseJson{"success": false, "error": "Undefined expense id."},
+		)
+	}
+	revertBalanceString := c.QueryParam("revertBalance")
+	if len(revertBalanceString) > 0 {
+		revertBalance, parseBooleanError := strconv.ParseBool(revertBalanceString)
+		if parseBooleanError != nil {
+			return c.JSON(
+				http.StatusBadRequest,
+				LooseJson{"success": false, "error": "Invalid query parameters."},
+			)
+		}
+
+		if revertBalance {
+			expenseAndBalance, getExpenseAndBalanceError := database.GetExpenseAndAccountBalanceById(eh.Db, expenseId)
+			if getExpenseAndBalanceError != nil {
+				eh.Logger.Error(
+					fmt.Sprintf("failed to get expense and balance from database. %s", getExpenseAndBalanceError.Error()),
+					requestId,
+				)
+				return c.JSON(
+					http.StatusInternalServerError,
+					LooseJson{"success": false, "error": "Internal server error."},
+				)
+			}
+
+			// Converting balance to float number
+			balanceInFloat, parseBalanceError := strconv.ParseFloat(expenseAndBalance.Balance, 64)
+			if parseBalanceError != nil {
+				eh.Logger.Error(fmt.Sprintf("failed to parse balance into float. %s", parseBalanceError.Error()), requestId)
+				return c.JSON(
+					http.StatusInternalServerError,
+					LooseJson{"success": false, "error": "Internal server error."},
+				)
+			}
+
+			// Converting amount to float number
+			amountInFloat, parseAmountError := strconv.ParseFloat(expenseAndBalance.Amount, 64)
+			if parseAmountError != nil {
+				eh.Logger.Error(fmt.Sprintf("failed to parse amount into float. %s", parseAmountError.Error()), requestId)
+				return c.JSON(
+					http.StatusInternalServerError,
+					LooseJson{"success": false, "error": "Internal server error."},
+				)
+			}
+
+			// Calculate the final account balance after reverting the expense amount
+			newAccountBalance, _ := big.NewFloat(0).Add(
+				big.NewFloat((balanceInFloat)),
+				big.NewFloat(amountInFloat),
+			).Float64()
+
+			_, updateAccountBalanceError := database.UpdateAccountBalance(
+				eh.Db,
+				strconv.FormatFloat(newAccountBalance, 'f', -1, 64),
+				expenseAndBalance.AccountId,
+			)
+			if updateAccountBalanceError != nil {
+				eh.Logger.Error(
+					fmt.Sprintf("failed to update latest balance after reverting expense amount. %s", updateAccountBalanceError.Error()),
+					requestId,
+				)
+				return c.JSON(
+					http.StatusInternalServerError,
+					LooseJson{"success": false, "error": "Internal server error."},
+				)
+			}
+		}
+	}
+
+	// Delete expense record in database
+	_, deleteError := database.DeleteExpense(eh.Db, expenseId, clientId)
+	if deleteError != nil {
+		eh.Logger.Error(
+			fmt.Sprintf("failed to delete expense in database. %s", deleteError.Error()),
+			requestId,
+		)
+		return c.JSON(
+			http.StatusInternalServerError,
+			LooseJson{"success": false, "error": "Internal server error."},
+		)
+	}
+	eh.Logger.Debug("deleted expense record in database", requestId)
 
 	return c.JSON(http.StatusOK, LooseJson{"success": true})
 }

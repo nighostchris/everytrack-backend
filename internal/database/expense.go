@@ -8,6 +8,7 @@ import (
 )
 
 type CreateNewExpenseParams struct {
+	Id         string    `json:"id"`
 	Name       string    `json:"name"`
 	Amount     string    `json:"amount"`
 	Remarks    *string   `json:"remarks"`
@@ -18,9 +19,15 @@ type CreateNewExpenseParams struct {
 	ExecutedAt time.Time `json:"executed_at"`
 }
 
+type ExpenseAndAccountBalance struct {
+	Amount    string `json:"amount"`
+	Balance   string `json:"balance"`
+	AccountId string `json:"account_id"`
+}
+
 func GetAllExpenses(db *pgxpool.Pool, clientId string) ([]Expense, error) {
 	expenses := []Expense{}
-	query := `SELECT name, currency_id, category, amount, remarks, executed_at FROM everytrack_backend.expense WHERE client_id = $1;`
+	query := `SELECT id, name, account_id, currency_id, category, amount, remarks, executed_at FROM everytrack_backend.expense WHERE client_id = $1;`
 	rows, queryError := db.Query(context.Background(), query, clientId)
 	if queryError != nil {
 		return expenses, queryError
@@ -30,7 +37,16 @@ func GetAllExpenses(db *pgxpool.Pool, clientId string) ([]Expense, error) {
 
 	for rows.Next() {
 		var expense Expense
-		scanError := rows.Scan(&expense.Name, &expense.CurrencyId, &expense.Category, &expense.Amount, &expense.Remarks, &expense.ExecutedAt)
+		scanError := rows.Scan(
+			&expense.Id,
+			&expense.Name,
+			&expense.AccountId,
+			&expense.CurrencyId,
+			&expense.Category,
+			&expense.Amount,
+			&expense.Remarks,
+			&expense.ExecutedAt,
+		)
 		if scanError != nil {
 			return expenses, scanError
 		}
@@ -38,6 +54,20 @@ func GetAllExpenses(db *pgxpool.Pool, clientId string) ([]Expense, error) {
 	}
 
 	return expenses, nil
+}
+
+func GetExpenseAndAccountBalanceById(db *pgxpool.Pool, expenseId string) (ExpenseAndAccountBalance, error) {
+	result := ExpenseAndAccountBalance{}
+	query := `SELECT amount, balance, account_id
+	FROM everytrack_backend.expense as e
+	INNER JOIN everytrack_backend.account as a ON a.id = e.account_id
+	WHERE e.id = $1;`
+	queryError := db.QueryRow(context.Background(), query, expenseId).Scan(&result.Amount, &result.Balance, &result.AccountId)
+	if queryError != nil {
+		return result, queryError
+	}
+
+	return result, nil
 }
 
 func CreateNewExpense(db *pgxpool.Pool, params CreateNewExpenseParams) (bool, error) {
@@ -57,6 +87,17 @@ func CreateNewExpense(db *pgxpool.Pool, params CreateNewExpenseParams) (bool, er
 
 	if createError != nil {
 		return false, createError
+	}
+
+	return true, nil
+}
+
+func DeleteExpense(db *pgxpool.Pool, expenseId string, clientId string) (bool, error) {
+	query := "DELETE FROM everytrack_backend.expense WHERE id = $1 AND client_id = $2;"
+	_, deleteError := db.Exec(context.Background(), query, expenseId, clientId)
+
+	if deleteError != nil {
+		return false, deleteError
 	}
 
 	return true, nil

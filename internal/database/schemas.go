@@ -41,6 +41,15 @@ type AssetProviderAccountType struct {
 	UpdatedAt       time.Time `json:"updated_at"`
 }
 
+type Cash struct {
+	Id         string    `json:"id"`
+	ClientId   string    `json:"client_id"`
+	CurrencyId string    `json:"currency_id"`
+	Amount     string    `json:"amount"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+}
+
 type Client struct {
 	Id         string    `json:"id"`
 	Email      string    `json:"email"`

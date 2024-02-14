@@ -34,15 +34,15 @@ type FuturePaymentRecord struct {
 }
 
 type CreateNewFuturePaymentRequestBody struct {
-	Name        string `json:"name"`
-	Amount      string `json:"amount"`
-	Income      string `json:"income"`
-	Rolling     string `json:"rolling"`
+	Name        string `json:"name" validate:"required"`
+	Amount      string `json:"amount" validate:"required"`
+	Income      string `json:"income" validate:"required"`
+	Rolling     string `json:"rolling" validate:"required"`
 	Remarks     string `json:"remarks"`
 	Frequency   int64  `json:"frequency"`
-	AccountId   string `json:"accountId"`
-	CurrencyId  string `json:"currencyId"`
-	ScheduledAt int64  `json:"scheduledAt"`
+	AccountId   string `json:"accountId" validate:"required"`
+	CurrencyId  string `json:"currencyId" validate:"required"`
+	ScheduledAt int64  `json:"scheduledAt" validate:"required"`
 }
 
 type UpdateFuturePaymentRequestBody struct {
@@ -50,8 +50,8 @@ type UpdateFuturePaymentRequestBody struct {
 	Name        string `json:"name" validate:"required"`
 	Income      string `json:"income" validate:"required"`
 	Amount      string `json:"amount" validate:"required"`
-	Remarks     string `json:"remarks"`
 	Rolling     string `json:"rolling" validate:"required"`
+	Remarks     string `json:"remarks"`
 	Frequency   int64  `json:"frequency"`
 	AccountId   string `json:"accountId" validate:"required"`
 	CurrencyId  string `json:"currencyId" validate:"required"`

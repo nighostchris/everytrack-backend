@@ -40,17 +40,17 @@ type StockHoldingRecord struct {
 }
 
 type CreateNewStockHoldingRequestBody struct {
-	Unit      string `json:"unit"`
-	Cost      string `json:"cost"`
-	StockId   string `json:"stockId"`
-	AccountId string `json:"accountId"`
+	Unit      string `json:"unit" validate:"required"`
+	Cost      string `json:"cost" validate:"required"`
+	StockId   string `json:"stockId" validate:"required"`
+	AccountId string `json:"accountId" validate:"required"`
 }
 
 type UpdateStockHoldingRequestBody struct {
-	Unit      string `json:"unit"`
-	Cost      string `json:"cost"`
-	StockId   string `json:"stockId"`
-	AccountId string `json:"accountId"`
+	Unit      string `json:"unit" validate:"required"`
+	Cost      string `json:"cost" validate:"required"`
+	StockId   string `json:"stockId" validate:"required"`
+	AccountId string `json:"accountId" validate:"required"`
 }
 
 func (sh *StocksHandler) GetAllStocks(c echo.Context) error {

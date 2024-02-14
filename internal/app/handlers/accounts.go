@@ -20,15 +20,15 @@ type AccountsHandler struct {
 }
 
 type CreateNewAccountRequestBody struct {
-	Name            string `json:"name"`
-	CurrencyId      string `json:"currencyId"`
-	AssetProviderId string `json:"assetProviderId"`
+	Name            string `json:"name" validate:"required"`
+	CurrencyId      string `json:"currencyId" validate:"required"`
+	AssetProviderId string `json:"assetProviderId" validate:"required"`
 }
 
 type UpdateAccountRequestBody struct {
-	Balance       string `json:"balance"`
-	CurrencyId    string `json:"currencyId"`
-	AccountTypeId string `json:"accountTypeId"`
+	Balance       string `json:"balance" validate:"required"`
+	CurrencyId    string `json:"currencyId" validate:"required"`
+	AccountTypeId string `json:"accountTypeId" validate:"required"`
 }
 
 func (ah *AccountsHandler) GetAllAccountsByType(c echo.Context) error {

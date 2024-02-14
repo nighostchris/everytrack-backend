@@ -25,8 +25,8 @@ type CashRecord struct {
 }
 
 type CreateNewCashRecordRequestBody struct {
-	Amount     string `json:"amount"`
-	CurrencyId string `json:"currencyId"`
+	Amount     string `json:"amount" validate:"required"`
+	CurrencyId string `json:"currencyId" validate:"required"`
 }
 
 func (ch *CashHandler) GetAllCash(c echo.Context) error {

@@ -33,13 +33,13 @@ type ExpenseRecord struct {
 }
 
 type CreateNewExpenseRequestBody struct {
-	Name       string `json:"name"`
-	Amount     string `json:"amount"`
+	Name       string `json:"name" validate:"required"`
+	Amount     string `json:"amount" validate:"required"`
 	Remarks    string `json:"remarks"`
-	Category   string `json:"category"`
+	Category   string `json:"category" validate:"required"`
 	AccountId  string `json:"accountId"`
-	CurrencyId string `json:"currencyId"`
-	ExecutedAt int64  `json:"executedAt"`
+	CurrencyId string `json:"currencyId" validate:"required"`
+	ExecutedAt int64  `json:"executedAt" validate:"required"`
 }
 
 func (eh *ExpensesHandler) GetAllExpenses(c echo.Context) error {

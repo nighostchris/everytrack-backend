@@ -91,6 +91,19 @@ type Expense struct {
 	ExecutedAt time.Time      `json:"executed_at"`
 }
 
+type FuturePayment struct {
+	Id          string         `json:"id"`
+	ClientId    string         `json:"client_id"`
+	AccountId   string         `json:"account_id"`
+	CurrencyId  string         `json:"currency_id"`
+	Name        string         `json:"name"`
+	Amount      string         `json:"amount"`
+	Income      bool           `json:"income"`
+	Rolling     bool           `json:"rolling"`
+	Remarks     sql.NullString `json:"remarks"`
+	ScheduledAt time.Time      `json:"scheduled_at"`
+}
+
 type Stock struct {
 	Id           string `json:"id"`
 	CountryId    string `json:"country_id"`

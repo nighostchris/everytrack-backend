@@ -11,32 +11,34 @@ import (
 )
 
 type Handlers struct {
-	Auth          *AuthHandler
-	Cash          *CashHandler
-	Stocks        *StocksHandler
-	Expenses      *ExpensesHandler
-	Accounts      *AccountsHandler
-	Settings      *SettingsHandler
-	Providers     *ProvidersHandler
-	Countries     *CountriesHandler
-	Currencies    *CurrenciesHandler
-	ExchangeRates *ExchangeRatesHandler
+	Auth           *AuthHandler
+	Cash           *CashHandler
+	Stocks         *StocksHandler
+	Expenses       *ExpensesHandler
+	Accounts       *AccountsHandler
+	Settings       *SettingsHandler
+	Providers      *ProvidersHandler
+	Countries      *CountriesHandler
+	Currencies     *CurrenciesHandler
+	ExchangeRates  *ExchangeRatesHandler
+	FuturePayments *FuturePaymentsHandler
 }
 
 type LooseJson map[string]interface{}
 
 func Init(db *pgxpool.Pool, env *config.Config, logger *zap.Logger) *Handlers {
 	return &Handlers{
-		Cash:          &CashHandler{Db: db, Logger: logger},
-		Stocks:        &StocksHandler{Db: db, Logger: logger},
-		Expenses:      &ExpensesHandler{Db: db, Logger: logger},
-		Settings:      &SettingsHandler{Db: db, Logger: logger},
-		Accounts:      &AccountsHandler{Db: db, Logger: logger},
-		Providers:     &ProvidersHandler{Db: db, Logger: logger},
-		Countries:     &CountriesHandler{Db: db, Logger: logger},
-		Currencies:    &CurrenciesHandler{Db: db, Logger: logger},
-		ExchangeRates: &ExchangeRatesHandler{Db: db, Logger: logger},
-		Auth:          &AuthHandler{Db: db, Logger: logger, TokenUtils: &utils.TokenUtils{Env: env, Logger: logger}},
+		Cash:           &CashHandler{Db: db, Logger: logger},
+		Stocks:         &StocksHandler{Db: db, Logger: logger},
+		Expenses:       &ExpensesHandler{Db: db, Logger: logger},
+		Settings:       &SettingsHandler{Db: db, Logger: logger},
+		Accounts:       &AccountsHandler{Db: db, Logger: logger},
+		Providers:      &ProvidersHandler{Db: db, Logger: logger},
+		Countries:      &CountriesHandler{Db: db, Logger: logger},
+		Currencies:     &CurrenciesHandler{Db: db, Logger: logger},
+		ExchangeRates:  &ExchangeRatesHandler{Db: db, Logger: logger},
+		FuturePayments: &FuturePaymentsHandler{Db: db, Logger: logger},
+		Auth:           &AuthHandler{Db: db, Logger: logger, TokenUtils: &utils.TokenUtils{Env: env, Logger: logger}},
 	}
 }
 
@@ -93,6 +95,13 @@ func (h *Handlers) BindRoutes(e *echo.Echo) {
 	// ============================================================
 	exchangeRates := v1.Group("/exrates")
 	exchangeRates.GET("", h.ExchangeRates.GetAllExchangeRates)
+	// ============================================================
+	// /v1/fpayments endpoints
+	// ============================================================
+	futurePayments := v1.Group("/fpayments")
+	futurePayments.GET("", h.FuturePayments.GetAllFuturePayments)
+	futurePayments.DELETE("", h.FuturePayments.DeleteFuturePayment)
+	futurePayments.POST("", h.FuturePayments.CreateNewFuturePayment)
 	// ============================================================
 	// /v1/providers endpoints
 	// ============================================================

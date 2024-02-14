@@ -99,6 +99,7 @@ func (h *Handlers) BindRoutes(e *echo.Echo) {
 	// /v1/fpayments endpoints
 	// ============================================================
 	futurePayments := v1.Group("/fpayments")
+	futurePayments.PUT("", h.FuturePayments.UpdateFuturePayment)
 	futurePayments.GET("", h.FuturePayments.GetAllFuturePayments)
 	futurePayments.DELETE("", h.FuturePayments.DeleteFuturePayment)
 	futurePayments.POST("", h.FuturePayments.CreateNewFuturePayment)

@@ -50,7 +50,7 @@ func (eh *FuturePaymentsHandler) GetAllFuturePayments(c echo.Context) error {
 	eh.Logger.Info("starts", requestId)
 
 	// Get all future payments from database
-	futurePayments, getFuturePaymentsError := database.GetAllFuturePayments(eh.Db, &clientId)
+	futurePayments, getFuturePaymentsError := database.GetAllFuturePaymentsByClientId(eh.Db, clientId)
 	if getFuturePaymentsError != nil {
 		eh.Logger.Error(
 			fmt.Sprintf("failed to get all future payment records from database. %s", getFuturePaymentsError.Error()),

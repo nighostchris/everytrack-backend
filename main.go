@@ -30,6 +30,7 @@ func main() {
 	cronJobs := cron.Init(db, env, logger)
 	cronJobs.SubscribeExchangeRates()
 	cronJobs.SubscribeTwelveDataFinancialData()
+	cronJobs.MonitorFuturePayments()
 
 	// Start web server
 	if initWebServerError := app.Start(fmt.Sprintf("%s:%d", env.WebServerHost, env.WebServerPort)); initWebServerError != nil {

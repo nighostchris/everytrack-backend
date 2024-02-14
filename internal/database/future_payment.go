@@ -21,13 +21,43 @@ type CreateNewFuturePaymentParams struct {
 	ScheduledAt time.Time `json:"scheduled_at"`
 }
 
-func GetAllFuturePayments(db *pgxpool.Pool, clientId *string) ([]FuturePayment, error) {
+func GetAllFuturePayments(db *pgxpool.Pool) ([]FuturePayment, error) {
 	futurePayments := []FuturePayment{}
-	query := `SELECT id, account_id, currency_id, name, amount, income, rolling, frequency, remarks, scheduled_at FROM everytrack_backend.future_payment`
-	if clientId != nil {
-		query += ` WHERE client_id = $1`
+	query := `SELECT id, client_id, account_id, currency_id, name, amount, income, rolling, frequency, remarks, scheduled_at FROM everytrack_backend.future_payment;`
+	rows, queryError := db.Query(context.Background(), query)
+	if queryError != nil {
+		return futurePayments, queryError
 	}
-	query += `;`
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var futurePayment FuturePayment
+		scanError := rows.Scan(
+			&futurePayment.Id,
+			&futurePayment.ClientId,
+			&futurePayment.AccountId,
+			&futurePayment.CurrencyId,
+			&futurePayment.Name,
+			&futurePayment.Amount,
+			&futurePayment.Income,
+			&futurePayment.Rolling,
+			&futurePayment.Frequency,
+			&futurePayment.Remarks,
+			&futurePayment.ScheduledAt,
+		)
+		if scanError != nil {
+			return futurePayments, scanError
+		}
+		futurePayments = append(futurePayments, futurePayment)
+	}
+
+	return futurePayments, nil
+}
+
+func GetAllFuturePaymentsByClientId(db *pgxpool.Pool, clientId string) ([]FuturePayment, error) {
+	futurePayments := []FuturePayment{}
+	query := `SELECT id, account_id, currency_id, name, amount, income, rolling, frequency, remarks, scheduled_at FROM everytrack_backend.future_payment WHERE client_id = $1;`
 	rows, queryError := db.Query(context.Background(), query, clientId)
 	if queryError != nil {
 		return futurePayments, queryError
@@ -77,6 +107,17 @@ func CreateNewFuturePayment(db *pgxpool.Pool, params CreateNewFuturePaymentParam
 
 	if createError != nil {
 		return false, createError
+	}
+
+	return true, nil
+}
+
+func UpdateFuturePaymentSchedule(db *pgxpool.Pool, scheduledAt time.Time, id string) (bool, error) {
+	query := "UPDATE everytrack_backend.account SET scheduled_at = $1 WHERE id = $2;"
+	_, updateError := db.Exec(context.Background(), query, scheduledAt, id)
+
+	if updateError != nil {
+		return false, updateError
 	}
 
 	return true, nil

@@ -26,6 +26,7 @@ type FuturePaymentRecord struct {
 	Income      bool   `json:"income"`
 	Rolling     bool   `json:"rolling"`
 	Remarks     string `json:"remarks"`
+	Frequency   *int64 `json:"frequency"`
 	AccountId   string `json:"accountId"`
 	CurrencyId  string `json:"currencyId"`
 	ScheduledAt int64  `json:"scheduledAt"`
@@ -37,6 +38,7 @@ type CreateNewFuturePaymentRequestBody struct {
 	Income      bool   `json:"income"`
 	Rolling     bool   `json:"rolling"`
 	Remarks     string `json:"remarks"`
+	Frequency   int64  `json:"frequency"`
 	AccountId   string `json:"accountId"`
 	CurrencyId  string `json:"currencyId"`
 	ScheduledAt int64  `json:"scheduledAt"`
@@ -48,7 +50,7 @@ func (eh *FuturePaymentsHandler) GetAllFuturePayments(c echo.Context) error {
 	eh.Logger.Info("starts", requestId)
 
 	// Get all future payments from database
-	futurePayments, getFuturePaymentsError := database.GetAllFuturePayments(eh.Db, clientId)
+	futurePayments, getFuturePaymentsError := database.GetAllFuturePayments(eh.Db, &clientId)
 	if getFuturePaymentsError != nil {
 		eh.Logger.Error(
 			fmt.Sprintf("failed to get all future payment records from database. %s", getFuturePaymentsError.Error()),
@@ -74,6 +76,9 @@ func (eh *FuturePaymentsHandler) GetAllFuturePayments(c echo.Context) error {
 			CurrencyId:  futurePayment.CurrencyId,
 			Remarks:     futurePayment.Remarks.String,
 			ScheduledAt: futurePayment.ScheduledAt.Unix(),
+		}
+		if futurePayment.Frequency.Valid {
+			record.Frequency = &futurePayment.Frequency.Int64
 		}
 		futurePaymentRecords = append(futurePaymentRecords, record)
 	}
@@ -112,6 +117,24 @@ func (eh *FuturePaymentsHandler) CreateNewFuturePayment(c echo.Context) error {
 	}
 	eh.Logger.Debug("validated request parameters", requestId)
 
+	// Throw error if the payment is on rolling basis but upstream does not send payment frequency as well
+	if data.Rolling && data.Frequency < 1 {
+		eh.Logger.Error("missing frequency when payment is on rolling basis.", requestId)
+		return c.JSON(
+			http.StatusBadRequest,
+			LooseJson{"success": false, "error": "Missing required field frequency"},
+		)
+	}
+
+	// Throw error if the scheduled payment time is on today or previous days
+	if data.ScheduledAt <= time.Now().Unix() {
+		eh.Logger.Error("the payment schedule time is earlier than current date.", requestId)
+		return c.JSON(
+			http.StatusBadRequest,
+			LooseJson{"success": false, "error": "Invalid payment schedule time"},
+		)
+	}
+
 	// Construct database query parameters
 	createNewFuturePaymentDbParams := database.CreateNewFuturePaymentParams{
 		Name:        data.Name,
@@ -123,9 +146,12 @@ func (eh *FuturePaymentsHandler) CreateNewFuturePayment(c echo.Context) error {
 		CurrencyId:  data.CurrencyId,
 		ScheduledAt: time.Unix(data.ScheduledAt, 0),
 	}
-	// Deal with nullable fields - remarks
+	// Deal with nullable fields - remarks and frequency
 	if len(data.Remarks) != 0 {
 		createNewFuturePaymentDbParams.Remarks = &data.Remarks
+	}
+	if data.Frequency > 0 {
+		createNewFuturePaymentDbParams.Frequency = &data.Frequency
 	}
 	eh.Logger.Debug(fmt.Sprintf("constructed parameters for create new future payment database query - %#v", createNewFuturePaymentDbParams))
 

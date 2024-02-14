@@ -14,15 +14,20 @@ type CreateNewFuturePaymentParams struct {
 	Amount      string    `json:"amount"`
 	Remarks     *string   `json:"remarks"`
 	Rolling     bool      `json:"rolling"`
+	Frequency   *int64    `json:"frequency"`
 	ClientId    string    `json:"client_id"`
 	AccountId   string    `json:"account_id"`
 	CurrencyId  string    `json:"currency_id"`
 	ScheduledAt time.Time `json:"scheduled_at"`
 }
 
-func GetAllFuturePayments(db *pgxpool.Pool, clientId string) ([]FuturePayment, error) {
+func GetAllFuturePayments(db *pgxpool.Pool, clientId *string) ([]FuturePayment, error) {
 	futurePayments := []FuturePayment{}
-	query := `SELECT id, account_id, currency_id, name, amount, income, rolling, remarks, scheduled_at FROM everytrack_backend.future_payment WHERE client_id = $1;`
+	query := `SELECT id, account_id, currency_id, name, amount, income, rolling, frequency, remarks, scheduled_at FROM everytrack_backend.future_payment`
+	if clientId != nil {
+		query += ` WHERE client_id = $1`
+	}
+	query += `;`
 	rows, queryError := db.Query(context.Background(), query, clientId)
 	if queryError != nil {
 		return futurePayments, queryError
@@ -40,6 +45,7 @@ func GetAllFuturePayments(db *pgxpool.Pool, clientId string) ([]FuturePayment, e
 			&futurePayment.Amount,
 			&futurePayment.Income,
 			&futurePayment.Rolling,
+			&futurePayment.Frequency,
 			&futurePayment.Remarks,
 			&futurePayment.ScheduledAt,
 		)
@@ -53,7 +59,7 @@ func GetAllFuturePayments(db *pgxpool.Pool, clientId string) ([]FuturePayment, e
 }
 
 func CreateNewFuturePayment(db *pgxpool.Pool, params CreateNewFuturePaymentParams) (bool, error) {
-	query := "INSERT INTO everytrack_backend.future_payment (client_id, account_id, currency_id, name, amount, income, rolling, remarks, scheduled_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);"
+	query := "INSERT INTO everytrack_backend.future_payment (client_id, account_id, currency_id, name, amount, income, rolling, frequency, remarks, scheduled_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);"
 	_, createError := db.Exec(
 		context.Background(),
 		query,
@@ -64,6 +70,7 @@ func CreateNewFuturePayment(db *pgxpool.Pool, params CreateNewFuturePaymentParam
 		params.Amount,
 		params.Income,
 		params.Rolling,
+		params.Frequency,
 		params.Remarks,
 		params.ScheduledAt,
 	)

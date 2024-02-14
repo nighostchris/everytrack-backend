@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS everytrack_backend.future_payment (
   amount          TEXT          NOT NULL,
   income          BOOLEAN       NOT NULL DEFAULT FALSE,
   rolling         BOOLEAN       NOT NULL DEFAULT FALSE,
+  frequency       BIGINT,       
   remarks         TEXT,
   scheduled_at    TIMESTAMPTZ   NOT NULL DEFAULT now(),
   created_at      TIMESTAMPTZ   NOT NULL DEFAULT now(),

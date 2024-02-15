@@ -14,8 +14,8 @@
 
 ```bash
 # Setup local docker container
-docker pull postgres:15.4
-docker run -d -e POSTGRES_USER=everytrack -e POSTGRES_PASSWORD=everytrack -p 5432:5432 -v /var/lib/postgresql/data/everytrack:/var/lib/postgresql/data --name everytrack-pg postgres:15.4
+docker pull postgres:16.1
+docker run -d -e POSTGRES_USER=everytrack -e POSTGRES_PASSWORD=everytrack -p 5432:5432 -v /var/lib/postgresql/data/everytrack:/var/lib/postgresql/data --name everytrack-pg postgres:16.1
 
 # Access database in container
 docker exec -it everytrack-pg bash

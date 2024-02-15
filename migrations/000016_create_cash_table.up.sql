@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS everytrack_backend.cash (
   UNIQUE(client_id, currency_id)
 );
 
-CREATE TRIGGER expense_updated_at
+CREATE TRIGGER cash_updated_at
 BEFORE UPDATE ON everytrack_backend.cash
 FOR EACH ROW
 EXECUTE PROCEDURE on_update_timestamp();

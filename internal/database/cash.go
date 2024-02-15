@@ -12,6 +12,13 @@ type CreateNewCashRecordParams struct {
 	CurrencyId string `json:"currency_id"`
 }
 
+type UpdateCashRecordParams struct {
+	Id         string `json:"id"`
+	Amount     string `json:"amount"`
+	ClientId   string `json:"client_id"`
+	CurrencyId string `json:"currency_id"`
+}
+
 func GetAllCash(db *pgxpool.Pool, clientId string) ([]Cash, error) {
 	cashRecords := []Cash{}
 	query := `SELECT id, currency_id, amount FROM everytrack_backend.cash WHERE client_id = $1;`
@@ -50,6 +57,17 @@ func CreateNewCashRecord(db *pgxpool.Pool, params CreateNewCashRecordParams) (bo
 
 	if createError != nil {
 		return false, createError
+	}
+
+	return true, nil
+}
+
+func UpdateCashRecord(db *pgxpool.Pool, params UpdateCashRecordParams) (bool, error) {
+	query := "UPDATE everytrack_backend.cash SET amount = $1, currency_id = $2 WHERE id = $3 AND client_id = $4;"
+	_, updateError := db.Exec(context.Background(), query, params.Amount, params.CurrencyId, params.Id, params.ClientId)
+
+	if updateError != nil {
+		return false, updateError
 	}
 
 	return true, nil

@@ -72,6 +72,7 @@ func (h *Handlers) BindRoutes(e *echo.Echo) {
 	cash := v1.Group("/cash")
 	cash.GET("", h.Cash.GetAllCash)
 	cash.DELETE("", h.Cash.DeleteCash)
+	cash.PUT("", h.Cash.UpdateCashRecord)
 	cash.POST("", h.Cash.CreateNewCashRecord)
 	// ============================================================
 	// /v1/countries endpoints

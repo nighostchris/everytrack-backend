@@ -55,7 +55,7 @@ func (ch *CashHandler) GetAllCash(c echo.Context) error {
 	ch.Logger.Debug("got cash records from database", requestId)
 
 	// Construct the response object
-	var cashRecords []CashRecord
+	cashRecords := []CashRecord{}
 	for _, dbCash := range cash {
 		record := CashRecord{
 			Id:         dbCash.Id,

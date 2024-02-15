@@ -101,6 +101,8 @@ func (cj *CronJob) MonitorFuturePayments() {
 				}
 			}
 
+			cj.Logger.Info("finished")
+
 			time.Sleep(1 * time.Hour)
 		}
 	}()

@@ -137,7 +137,7 @@ func UpdateFuturePayment(db *pgxpool.Pool, params UpdateFuturePaymentParams) (bo
 }
 
 func UpdateFuturePaymentSchedule(db *pgxpool.Pool, scheduledAt time.Time, id string) (bool, error) {
-	query := "UPDATE everytrack_backend.account SET scheduled_at = $1 WHERE id = $2;"
+	query := "UPDATE everytrack_backend.future_payment SET scheduled_at = $1 WHERE id = $2;"
 	_, updateError := db.Exec(context.Background(), query, scheduledAt, id)
 
 	if updateError != nil {

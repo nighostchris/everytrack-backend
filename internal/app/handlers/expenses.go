@@ -74,7 +74,8 @@ func (eh *ExpensesHandler) GetAllExpenses(c echo.Context) error {
 			ExecutedAt: expense.ExecutedAt.Unix(),
 		}
 		if len(expense.AccountId.String) > 0 {
-			record.AccountId = &expense.AccountId.String
+			accountId := expense.AccountId.String
+			record.AccountId = &accountId
 		}
 		expenseRecords = append(expenseRecords, record)
 	}

@@ -75,10 +75,10 @@ func (fph *FuturePaymentsHandler) GetAllFuturePayments(c echo.Context) error {
 			LooseJson{"success": false, "error": "Internal server error."},
 		)
 	}
-	fph.Logger.Debug("got expense records from database", requestId)
+	fph.Logger.Debug("got future payments from database", requestId)
 
 	// Construct the response object
-	var futurePaymentRecords []FuturePaymentRecord
+	futurePaymentRecords := []FuturePaymentRecord{}
 	for _, futurePayment := range futurePayments {
 		record := FuturePaymentRecord{
 			Id:          futurePayment.Id,
@@ -92,7 +92,8 @@ func (fph *FuturePaymentsHandler) GetAllFuturePayments(c echo.Context) error {
 			ScheduledAt: futurePayment.ScheduledAt.Unix(),
 		}
 		if futurePayment.Frequency.Valid {
-			record.Frequency = &futurePayment.Frequency.Int64
+			frequency := futurePayment.Frequency.Int64
+			record.Frequency = &frequency
 		}
 		futurePaymentRecords = append(futurePaymentRecords, record)
 	}

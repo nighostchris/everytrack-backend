@@ -79,7 +79,7 @@ func (cj *CronJob) MonitorFuturePayments() {
 					// Update the next schedule date according to frequency if the payment is on rolling basis
 					// Otherwise delete the payment
 					if payment.Rolling {
-						nextScheduledDate := time.Unix(payment.ScheduledAt.Unix() + payment.Frequency.Int64 / 1000, 0)
+						nextScheduledDate := time.Unix(payment.ScheduledAt.Unix() + payment.Frequency.Int64, 0)
 						cj.Logger.Debug(fmt.Sprintf("going to update payment schedule for account %s from %s to %s", payment.AccountId, payment.ScheduledAt, nextScheduledDate))
 
 						_, updateFuturePaymentScheduleError := database.UpdateFuturePaymentSchedule(cj.Db, nextScheduledDate, payment.Id)

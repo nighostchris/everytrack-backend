@@ -14,12 +14,12 @@ type Handlers struct {
 	Auth           *AuthHandler
 	Cash           *CashHandler
 	Stocks         *StocksHandler
-	Expenses       *ExpensesHandler
 	Accounts       *AccountsHandler
 	Settings       *SettingsHandler
 	Providers      *ProvidersHandler
 	Countries      *CountriesHandler
 	Currencies     *CurrenciesHandler
+	Transactions   *TransactionsHandler
 	ExchangeRates  *ExchangeRatesHandler
 	FuturePayments *FuturePaymentsHandler
 }
@@ -30,12 +30,12 @@ func Init(db *pgxpool.Pool, env *config.Config, logger *zap.Logger) *Handlers {
 	return &Handlers{
 		Cash:           &CashHandler{Db: db, Logger: logger},
 		Stocks:         &StocksHandler{Db: db, Logger: logger},
-		Expenses:       &ExpensesHandler{Db: db, Logger: logger},
 		Settings:       &SettingsHandler{Db: db, Logger: logger},
 		Accounts:       &AccountsHandler{Db: db, Logger: logger},
 		Providers:      &ProvidersHandler{Db: db, Logger: logger},
 		Countries:      &CountriesHandler{Db: db, Logger: logger},
 		Currencies:     &CurrenciesHandler{Db: db, Logger: logger},
+		Transactions:   &TransactionsHandler{Db: db, Logger: logger},
 		ExchangeRates:  &ExchangeRatesHandler{Db: db, Logger: logger},
 		FuturePayments: &FuturePaymentsHandler{Db: db, Logger: logger},
 		Auth:           &AuthHandler{Db: db, Logger: logger, TokenUtils: &utils.TokenUtils{Env: env, Logger: logger}},
@@ -85,12 +85,12 @@ func (h *Handlers) BindRoutes(e *echo.Echo) {
 	currencies := v1.Group("/currencies")
 	currencies.GET("", h.Currencies.GetAllCurrencies)
 	// ============================================================
-	// /v1/expenses endpoints
+	// /v1/transactions endpoints
 	// ============================================================
-	expenses := v1.Group("/expenses")
-	expenses.GET("", h.Expenses.GetAllExpenses)
-	expenses.DELETE("", h.Expenses.DeleteExpense)
-	expenses.POST("", h.Expenses.CreateNewExpense)
+	transactions := v1.Group("/transactions")
+	transactions.GET("", h.Transactions.GetAllTransactions)
+	transactions.DELETE("", h.Transactions.DeleteTransaction)
+	transactions.POST("", h.Transactions.CreateNewTransaction)
 	// ============================================================
 	// /v1/exrates endpoints
 	// ============================================================

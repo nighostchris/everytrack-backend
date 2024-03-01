@@ -79,9 +79,10 @@ type ExchangeRate struct {
 	Rate             string `json:"rate"`
 }
 
-type Expense struct {
+type Transaction struct {
 	Id         string         `json:"id"`
 	Name       string         `json:"name"`
+	Income     bool           `json:"income"`
 	ClientId   string         `json:"client_id"`
 	AccountId  sql.NullString `json:"account_id"`
 	CurrencyId string         `json:"currency_id"`

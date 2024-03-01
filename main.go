@@ -28,8 +28,8 @@ func main() {
 
 	// Initialize cron jobs
 	cronJobs := cron.Init(db, env, logger)
-	cronJobs.SubscribeExchangeRates()
-	cronJobs.SubscribeTwelveDataFinancialData()
+	// cronJobs.SubscribeExchangeRates()
+	// cronJobs.SubscribeTwelveDataFinancialData()
 	cronJobs.MonitorFuturePayments()
 
 	// Start web server

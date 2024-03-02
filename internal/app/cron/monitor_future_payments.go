@@ -54,7 +54,7 @@ func (cj *CronJob) MonitorFuturePayments() {
 						return
 					}
 
-					// Calculate the final account balance after spending the expense amount
+					// Calculate the final account balance after spending / receiving the payment amount
 					amount := big.NewFloat(amountInFloat)
 					if !payment.Income {
 						amount = big.NewFloat(0).Neg(amount)

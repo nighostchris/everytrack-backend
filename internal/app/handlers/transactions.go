@@ -145,8 +145,8 @@ func (th *TransactionsHandler) CreateNewTransaction(c echo.Context) error {
 	}
 	th.Logger.Debug(fmt.Sprintf("constructed parameters for create new transaction database query - %#v", createNewTransactionDbParams))
 
-	// Check if there is enough balance to consume when accountId is not empty
-	if createNewTransactionDbParams.AccountId != nil && !income {
+	// Check if there is enough balance to consume when accountId is not empty and the request is an expense
+	if createNewTransactionDbParams.AccountId != nil {
 		accountBalance, getAccountBalanceError := database.GetAccountBalance(th.Db, *createNewTransactionDbParams.AccountId)
 		if getAccountBalanceError != nil {
 			th.Logger.Error(
@@ -185,7 +185,7 @@ func (th *TransactionsHandler) CreateNewTransaction(c echo.Context) error {
 
 		// Compare balance with amount
 		balanceComparison := big.NewFloat(amountInFloat).Cmp(big.NewFloat(balanceInFloat))
-		if balanceComparison == 1 {
+		if balanceComparison == 1 && !income {
 			return c.JSON(
 				http.StatusBadRequest,
 				LooseJson{"success": false, "error": "Insufficient account balance."},
@@ -196,9 +196,14 @@ func (th *TransactionsHandler) CreateNewTransaction(c echo.Context) error {
 			requestId,
 		)
 
-		// Calculate the final account balance after spending the transaction amount
-		negativeAmount := big.NewFloat(0).Neg(big.NewFloat(amountInFloat))
-		newAccountBalance := big.NewFloat(0).Add(big.NewFloat((balanceInFloat)), negativeAmount)
+		// Calculate the final account balance after receiving / spending the transaction amount
+		var amount *big.Float
+		if income {
+			amount = big.NewFloat(amountInFloat)
+		} else {
+			amount = big.NewFloat(0).Neg(big.NewFloat(amountInFloat))
+		}
+		newAccountBalance := big.NewFloat(0).Add(big.NewFloat((balanceInFloat)), amount)
 		newAccountBalanceInFloat, _ := newAccountBalance.Float64()
 
 		_, updateAccountBalanceError := database.UpdateAccountBalance(
@@ -293,9 +298,15 @@ func (th *TransactionsHandler) DeleteTransaction(c echo.Context) error {
 			}
 
 			// Calculate the final account balance after reverting the transaction amount
+			var amount *big.Float
+			if transactionAndBalance.Income {
+				amount = big.NewFloat(0).Neg(big.NewFloat(amountInFloat))
+			} else {
+				amount = big.NewFloat(amountInFloat)
+			}
 			newAccountBalance, _ := big.NewFloat(0).Add(
 				big.NewFloat((balanceInFloat)),
-				big.NewFloat(amountInFloat),
+				amount,
 			).Float64()
 
 			_, updateAccountBalanceError := database.UpdateAccountBalance(

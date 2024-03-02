@@ -21,6 +21,7 @@ type CreateNewTransactionParams struct {
 }
 
 type TransactionAndAccountBalance struct {
+	Income    bool   `json:"income"`
 	Amount    string `json:"amount"`
 	Balance   string `json:"balance"`
 	AccountId string `json:"account_id"`
@@ -60,11 +61,11 @@ func GetAllTransactions(db *pgxpool.Pool, clientId string) ([]Transaction, error
 
 func GetTransactionAndAccountBalanceById(db *pgxpool.Pool, transactionId string) (TransactionAndAccountBalance, error) {
 	result := TransactionAndAccountBalance{}
-	query := `SELECT amount, balance, account_id
+	query := `SELECT amount, income, balance, account_id
 	FROM everytrack_backend.transaction as t
 	INNER JOIN everytrack_backend.account as a ON a.id = t.account_id
 	WHERE t.id = $1;`
-	queryError := db.QueryRow(context.Background(), query, transactionId).Scan(&result.Amount, &result.Balance, &result.AccountId)
+	queryError := db.QueryRow(context.Background(), query, transactionId).Scan(&result.Amount, &result.Income, &result.Balance, &result.AccountId)
 	if queryError != nil {
 		return result, queryError
 	}

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/nighostchris/everytrack-backend/internal/database"
+	"github.com/nighostchris/everytrack-backend/internal/utils"
 )
 
 func (cj *CronJob) MonitorFuturePayments() {
@@ -79,7 +80,8 @@ func (cj *CronJob) MonitorFuturePayments() {
 					// Update the next schedule date according to frequency if the payment is on rolling basis
 					// Otherwise delete the payment
 					if payment.Rolling {
-						nextScheduledDate := payment.ScheduledAt.AddDate(0, 0, int(payment.Frequency.Int64 / 86400))
+						paymentFrequency := utils.CalculateActualPaymentFrequency(int(payment.Frequency.Int64))
+						nextScheduledDate := payment.ScheduledAt.AddDate(paymentFrequency.Years, paymentFrequency.Months, paymentFrequency.Days)
 						cj.Logger.Debug(fmt.Sprintf("going to update payment schedule for account %s from %s to %s", payment.AccountId, payment.ScheduledAt, nextScheduledDate))
 
 						_, updateFuturePaymentScheduleError := database.UpdateFuturePaymentSchedule(cj.Db, nextScheduledDate, payment.Id)

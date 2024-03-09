@@ -66,6 +66,8 @@ func (h *Handlers) BindRoutes(e *echo.Echo) {
 	auth.POST("/login", h.Auth.Login)
 	auth.POST("/signup", h.Auth.Signup)
 	auth.POST("/verify", h.Auth.Verify)
+	auth.POST("/logout", h.Auth.Logout)
+	auth.POST("/refresh", h.Auth.Refresh)
 	// ============================================================
 	// /v1/cash endpoints
 	// ============================================================

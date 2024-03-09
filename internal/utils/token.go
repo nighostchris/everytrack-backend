@@ -19,8 +19,12 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
-func (tu TokenUtils) GetTokenExpiry() time.Time {
-	return time.Now().Add(time.Hour * time.Duration(tu.Env.TokenExpiryInHour))
+func (tu TokenUtils) GetAccessTokenExpiry() time.Time {
+	return time.Now().Add(time.Hour * time.Duration(tu.Env.AccessTokenExpiryInHour))
+}
+
+func (tu TokenUtils) GetRefreshTokenExpiry() time.Time {
+	return time.Now().Add(time.Hour * time.Duration(tu.Env.RefreshTokenExpiryInHour))
 }
 
 func (tu TokenUtils) GenerateToken(sub string, tokenType int) (string, error) {
@@ -30,6 +34,8 @@ func (tu TokenUtils) GenerateToken(sub string, tokenType int) (string, error) {
 	var secret []byte
 	if tokenType == 0 {
 		secret = []byte(tu.Env.AccessTokenSecret)
+	} else if tokenType == 1 {
+		secret = []byte(tu.Env.RefreshTokenSecret)
 	} else {
 		return "", errors.New("invalid token type for generation")
 	}
@@ -38,7 +44,11 @@ func (tu TokenUtils) GenerateToken(sub string, tokenType int) (string, error) {
 	claims := new(CustomClaims)
 	claims.Issuer = "everytrack-backend"
 	claims.Subject = sub
-	claims.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Hour * time.Duration(tu.Env.TokenExpiryInHour)))
+	if tokenType == 0 {
+		claims.ExpiresAt = jwt.NewNumericDate(tu.GetAccessTokenExpiry())
+	} else {
+		claims.ExpiresAt = jwt.NewNumericDate(tu.GetRefreshTokenExpiry())
+	}
 	claims.NotBefore = jwt.NewNumericDate(time.Now())
 	claims.IssuedAt = jwt.NewNumericDate(time.Now())
 
@@ -55,14 +65,18 @@ func (tu TokenUtils) GenerateToken(sub string, tokenType int) (string, error) {
 	return signedJwt, nil
 }
 
-func (tu TokenUtils) VerifyToken(token string) (bool, string) {
+func (tu TokenUtils) VerifyToken(token string, tokenType int) (bool, string) {
 	tu.Logger.Info(fmt.Sprintf("starts verifying token %s", token))
 
 	t, parseTokenError := jwt.ParseWithClaims(token, &CustomClaims{}, func(tk *jwt.Token) (interface{}, error) {
 		if _, isValidSigningMethod := tk.Method.(*jwt.SigningMethodHMAC); !isValidSigningMethod {
 			return nil, fmt.Errorf("unexpected signing method %s", tk.Header["alg"])
 		}
-		return []byte(tu.Env.AccessTokenSecret), nil
+		if tokenType == 0 {
+			return []byte(tu.Env.AccessTokenSecret), nil
+		} else {
+			return []byte(tu.Env.RefreshTokenSecret), nil
+		}
 	})
 
 	if parseTokenError != nil || !t.Valid {

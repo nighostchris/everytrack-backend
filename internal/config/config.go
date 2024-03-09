@@ -17,8 +17,10 @@ type Config struct {
 	// Postgres
 	Database string `env:"DATABASE,notEmpty"`
 	// Authentication Token
-	TokenExpiryInHour int    `env:"TOKEN_EXPIRY_IN_HOUR,notEmpty"`
-	AccessTokenSecret string `env:"ACCESS_TOKEN_SECRET,notEmpty"`
+	AccessTokenExpiryInHour  int    `env:"ACCESS_TOKEN_EXPIRY_IN_HOUR,notEmpty"`
+	RefreshTokenExpiryInHour int    `env:"REFRESH_TOKEN_EXPIRY_IN_HOUR,notEmpty"`
+	RefreshTokenSecret       string `env:"REFRESH_TOKEN_SECRET,notEmpty"`
+	AccessTokenSecret        string `env:"ACCESS_TOKEN_SECRET,notEmpty"`
 	// Logger
 	LogLevel string `env:"LOG_LEVEL,notEmpty"`
 	// External API

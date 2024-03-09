@@ -23,53 +23,59 @@ type LogMiddleware struct {
 
 func (am *AuthMiddleware) New(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		whitelistPaths := []string{"/", "/v1/auth/login", "/v1/auth/signup"}
+		whitelistPaths := []string{"/", "/v1/auth/login", "/v1/auth/logout", "/v1/auth/refresh", "/v1/auth/signup"}
 
-		if !slices.Contains(whitelistPaths, c.Request().RequestURI) {
-			am.Logger.Info("going through auth middleware")
-			token, getTokenError := c.Request().Cookie("token")
+		// Ignore authentication check if the request path is whitelisted
+		if slices.Contains(whitelistPaths, c.Request().RequestURI) {
+			next(c)
+			return nil
+		}
+		am.Logger.Info("going through auth middleware")
+		accessToken, getTokenError := c.Request().Cookie("token")
 
-			if getTokenError != nil {
-				am.Logger.Error("token does not exist in cookie")
-				// Try to extract token from Authorization header
-				authHeader := c.Request().Header.Get("Authorization")
-
-				if len(authHeader) > 0 {
-					regexExpression := "\\s|Bearer"
-					regex := regexp.MustCompile(regexExpression)
-					bearerToken := regex.ReplaceAllString(authHeader, "")
-
-					if len(bearerToken) > 0 {
-						isTokenValid, uid := am.TokenUtils.VerifyToken(bearerToken)
-
-						if !isTokenValid {
-							am.Logger.Error("invalid token")
-							return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false})
-						}
-
-						c.Set("uid", uid)
-						next(c)
-						return nil
-					}
-				} else {
-					am.Logger.Error("token does not exist in authorization header as well")
-				}
-
+		// Deal with case where access token does not exist in cookie
+		if getTokenError != nil {
+			am.Logger.Error("access token does not exist in cookie")
+			// Try to extract bearer access token from Authorization header
+			authHeader := c.Request().Header.Get("Authorization")
+			if len(authHeader) == 0 {
+				am.Logger.Error("access token does not exist in authorization header as well")
 				return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false})
 			}
 
-			isTokenValid, uid := am.TokenUtils.VerifyToken(token.Value)
+			// Try to extract access token from bearer access token
+			regexExpression := "\\s|Bearer"
+			regex := regexp.MustCompile(regexExpression)
+			bearerToken := regex.ReplaceAllString(authHeader, "")
+			if len(bearerToken) == 0 {
+				am.Logger.Error("access token does not exist in authorization header as well")
+				return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false})
+			}
 
-			if !isTokenValid {
-				am.Logger.Error("invalid token")
+			// Verify access token
+			isAccessTokenValid, uid := am.TokenUtils.VerifyToken(bearerToken, 0)
+			if !isAccessTokenValid {
+				am.Logger.Error("invalid access token")
 				return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false})
 			}
 
 			c.Set("uid", uid)
+			next(c)
+			return nil
 		}
 
-		next(c)
-		return nil
+		// Verify the access token in cookie
+		isTokenValid, uid := am.TokenUtils.VerifyToken(accessToken.Value, 0)
+
+		// Allow request to go through if access token is valid
+		if isTokenValid {
+			c.Set("uid", uid)
+			next(c)
+			return nil
+		}
+		am.Logger.Error("invalid access token")
+
+		return c.JSON(http.StatusUnauthorized, map[string]interface{}{"success": false})
 	}
 }
 

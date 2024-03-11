@@ -2,7 +2,7 @@
 
 - [Local Environment Setup](#local-environment-setup)
   - [Postgres](#postgres)
-  - [Migration](#migration)
+  - [Seeding](#seeding)
   - [Hot Reload](#hot-reload)
 - [Useful Commands](#useful-commands)
   - [pgcli](#pgcli)
@@ -20,25 +20,6 @@ docker run -d -e POSTGRES_USER=everytrack -e POSTGRES_PASSWORD=everytrack -p 543
 # Access database in container
 docker exec -it everytrack-pg bash
 psql -U everytrack -d postgres
-```
-
-### Migration
-
-```bash
-go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
-
-# Export path to global golang executable bin directory
-vim .zshrc
-export PATH=$PATH:$HOME/go/bin
-
-# Create new migration file
-migrate create -ext sql -dir ./migrations -seq <migration_file_name>
-
-# Run migration
-migrate -path ./migrations -database "postgresql://everytrack:everytrack@127.0.0.1:5432/everytrack?sslmode=disable" up
-
-# Rollback migration
-migrate -path ./migrations -database "postgresql://everytrack:everytrack@127.0.0.1:5432/everytrack?sslmode=disable" down -all
 ```
 
 ### Seeding

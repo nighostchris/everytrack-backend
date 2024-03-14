@@ -74,7 +74,7 @@ func (tdfda *TwelveDataFinancialDataApi) FetchLatestUSStockPrice() {
 	rawResponse, fetchError := http.Get(fmt.Sprintf(
 		"https://api.twelvedata.com/time_series?symbol=%s&interval=1min&apikey=%s",
 		symbol,
-		tdfda.Env.TwelveDataApiKey,
+		"api-key",
 	))
 	if fetchError != nil {
 		tdfda.Logger.Error(fmt.Sprintf("failed to fetch twelve data financial data api. %s", fetchError.Error()))

@@ -8,7 +8,6 @@ import (
 )
 
 type CreateNewTransactionParams struct {
-	Id         string    `json:"id"`
 	Name       string    `json:"name"`
 	Income     bool      `json:"income"`
 	Amount     string    `json:"amount"`

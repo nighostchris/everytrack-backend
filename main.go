@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/nighostchris/everytrack-backend/internal/app/cron"
 	"github.com/nighostchris/everytrack-backend/internal/app/handlers"
 	"github.com/nighostchris/everytrack-backend/internal/config"
 	"github.com/nighostchris/everytrack-backend/internal/connections/postgres"
@@ -27,8 +26,7 @@ func main() {
 	handlers.BindRoutes(app)
 
 	// Initialize cron jobs
-	cronJobs := cron.Init(db, env, logger)
-	cronJobs.MonitorFuturePayments()
+	// cronJobs := cron.Init(db, env, logger)
 
 	// Start web server
 	if initWebServerError := app.Start(fmt.Sprintf("%s:%d", env.WebServerHost, env.WebServerPort)); initWebServerError != nil {

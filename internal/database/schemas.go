@@ -101,6 +101,7 @@ type FuturePayment struct {
 	Amount      string         `json:"amount"`
 	Income      bool           `json:"income"`
 	Rolling     bool           `json:"rolling"`
+	Category    string         `json:"category"`
 	Frequency   sql.NullInt64  `json:"frequency"`
 	Remarks     sql.NullString `json:"remarks"`
 	ScheduledAt time.Time      `json:"scheduled_at"`

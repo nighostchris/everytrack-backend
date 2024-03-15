@@ -14,6 +14,7 @@ type CreateNewFuturePaymentParams struct {
 	Amount      string    `json:"amount"`
 	Remarks     *string   `json:"remarks"`
 	Rolling     bool      `json:"rolling"`
+	Category    string    `json:"category"`
 	Frequency   *int64    `json:"frequency"`
 	ClientId    string    `json:"client_id"`
 	AccountId   string    `json:"account_id"`
@@ -28,6 +29,7 @@ type UpdateFuturePaymentParams struct {
 	Amount      string    `json:"amount"`
 	Remarks     *string   `json:"remarks"`
 	Rolling     bool      `json:"rolling"`
+	Category    string    `json:"category"`
 	Frequency   *int64    `json:"frequency"`
 	AccountId   string    `json:"account_id"`
 	CurrencyId  string    `json:"currency_id"`
@@ -36,7 +38,7 @@ type UpdateFuturePaymentParams struct {
 
 func GetAllFuturePayments(db *pgxpool.Pool) ([]FuturePayment, error) {
 	futurePayments := []FuturePayment{}
-	query := `SELECT id, client_id, account_id, currency_id, name, amount, income, rolling, frequency, remarks, scheduled_at FROM everytrack_backend.future_payment;`
+	query := `SELECT id, client_id, account_id, currency_id, name, amount, income, rolling, category, frequency, remarks, scheduled_at FROM everytrack_backend.future_payment;`
 	rows, queryError := db.Query(context.Background(), query)
 	if queryError != nil {
 		return futurePayments, queryError
@@ -55,6 +57,7 @@ func GetAllFuturePayments(db *pgxpool.Pool) ([]FuturePayment, error) {
 			&futurePayment.Amount,
 			&futurePayment.Income,
 			&futurePayment.Rolling,
+			&futurePayment.Category,
 			&futurePayment.Frequency,
 			&futurePayment.Remarks,
 			&futurePayment.ScheduledAt,
@@ -70,7 +73,7 @@ func GetAllFuturePayments(db *pgxpool.Pool) ([]FuturePayment, error) {
 
 func GetAllFuturePaymentsByClientId(db *pgxpool.Pool, clientId string) ([]FuturePayment, error) {
 	futurePayments := []FuturePayment{}
-	query := `SELECT id, account_id, currency_id, name, amount, income, rolling, frequency, remarks, scheduled_at FROM everytrack_backend.future_payment WHERE client_id = $1;`
+	query := `SELECT id, account_id, currency_id, name, amount, income, rolling, category, frequency, remarks, scheduled_at FROM everytrack_backend.future_payment WHERE client_id = $1;`
 	rows, queryError := db.Query(context.Background(), query, clientId)
 	if queryError != nil {
 		return futurePayments, queryError
@@ -88,6 +91,7 @@ func GetAllFuturePaymentsByClientId(db *pgxpool.Pool, clientId string) ([]Future
 			&futurePayment.Amount,
 			&futurePayment.Income,
 			&futurePayment.Rolling,
+			&futurePayment.Category,
 			&futurePayment.Frequency,
 			&futurePayment.Remarks,
 			&futurePayment.ScheduledAt,
@@ -102,7 +106,7 @@ func GetAllFuturePaymentsByClientId(db *pgxpool.Pool, clientId string) ([]Future
 }
 
 func CreateNewFuturePayment(db *pgxpool.Pool, params CreateNewFuturePaymentParams) (bool, error) {
-	query := "INSERT INTO everytrack_backend.future_payment (client_id, account_id, currency_id, name, amount, income, rolling, frequency, remarks, scheduled_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);"
+	query := "INSERT INTO everytrack_backend.future_payment (client_id, account_id, currency_id, name, amount, income, rolling, category, frequency, remarks, scheduled_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);"
 	_, createError := db.Exec(
 		context.Background(),
 		query,
@@ -113,6 +117,7 @@ func CreateNewFuturePayment(db *pgxpool.Pool, params CreateNewFuturePaymentParam
 		params.Amount,
 		params.Income,
 		params.Rolling,
+		params.Category,
 		params.Frequency,
 		params.Remarks,
 		params.ScheduledAt,
@@ -126,8 +131,8 @@ func CreateNewFuturePayment(db *pgxpool.Pool, params CreateNewFuturePaymentParam
 }
 
 func UpdateFuturePayment(db *pgxpool.Pool, params UpdateFuturePaymentParams) (bool, error) {
-	query := "UPDATE everytrack_backend.future_payment SET name = $1, income = $2, amount = $3, remarks = $4, rolling = $5, frequency = $6, account_id = $7, currency_id = $8, scheduled_at = $9 WHERE id = $10;"
-	_, updateError := db.Exec(context.Background(), query, params.Name, params.Income, params.Amount, params.Remarks, params.Rolling, params.Frequency, params.AccountId, params.CurrencyId, params.ScheduledAt, params.Id)
+	query := "UPDATE everytrack_backend.future_payment SET name = $1, income = $2, amount = $3, remarks = $4, rolling = $5, category = $6, frequency = $7, account_id = $8, currency_id = $9, scheduled_at = $10 WHERE id = $11;"
+	_, updateError := db.Exec(context.Background(), query, params.Name, params.Income, params.Amount, params.Remarks, params.Rolling, params.Category, params.Frequency, params.AccountId, params.CurrencyId, params.ScheduledAt, params.Id)
 
 	if updateError != nil {
 		return false, updateError

@@ -27,6 +27,7 @@ type FuturePaymentRecord struct {
 	Income      bool   `json:"income"`
 	Rolling     bool   `json:"rolling"`
 	Remarks     string `json:"remarks"`
+	Category    string `json:"category"`
 	Frequency   *int64 `json:"frequency"`
 	AccountId   string `json:"accountId"`
 	CurrencyId  string `json:"currencyId"`
@@ -40,6 +41,7 @@ type CreateNewFuturePaymentRequestBody struct {
 	Rolling     string `json:"rolling" validate:"required"`
 	Remarks     string `json:"remarks"`
 	Frequency   int64  `json:"frequency"`
+	Category    string `json:"category"`
 	AccountId   string `json:"accountId" validate:"required"`
 	CurrencyId  string `json:"currencyId" validate:"required"`
 	ScheduledAt int64  `json:"scheduledAt" validate:"required"`
@@ -53,6 +55,7 @@ type UpdateFuturePaymentRequestBody struct {
 	Rolling     string `json:"rolling" validate:"required"`
 	Remarks     string `json:"remarks"`
 	Frequency   int64  `json:"frequency"`
+	Category    string `json:"category"`
 	AccountId   string `json:"accountId" validate:"required"`
 	CurrencyId  string `json:"currencyId" validate:"required"`
 	ScheduledAt int64  `json:"scheduledAt" validate:"required"`
@@ -86,6 +89,7 @@ func (fph *FuturePaymentsHandler) GetAllFuturePayments(c echo.Context) error {
 			Amount:      futurePayment.Amount,
 			Income:      futurePayment.Income,
 			Rolling:     futurePayment.Rolling,
+			Category:    futurePayment.Category,
 			AccountId:   futurePayment.AccountId,
 			CurrencyId:  futurePayment.CurrencyId,
 			Remarks:     futurePayment.Remarks.String,
@@ -174,6 +178,7 @@ func (fph *FuturePaymentsHandler) CreateNewFuturePayment(c echo.Context) error {
 		Income:      income,
 		Rolling:     rolling,
 		ClientId:    clientId,
+		Category:    data.Category,
 		AccountId:   data.AccountId,
 		CurrencyId:  data.CurrencyId,
 		ScheduledAt: time.Unix(data.ScheduledAt, 0),
@@ -260,6 +265,7 @@ func (fph *FuturePaymentsHandler) UpdateFuturePayment(c echo.Context) error {
 			Amount:      data.Amount,
 			Remarks:     &data.Remarks,
 			Rolling:     rolling,
+			Category:    data.Category,
 			Frequency:   &data.Frequency,
 			AccountId:   data.AccountId,
 			CurrencyId:  data.CurrencyId,

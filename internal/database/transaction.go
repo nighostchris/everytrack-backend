@@ -14,7 +14,7 @@ type CreateNewTransactionParams struct {
 	Remarks    *string   `json:"remarks"`
 	Category   string    `json:"category"`
 	ClientId   string    `json:"client_id"`
-	AccountId  *string   `json:"account_id"`
+	AccountId  string    `json:"account_id"`
 	CurrencyId string    `json:"currency_id"`
 	ExecutedAt time.Time `json:"executed_at"`
 }

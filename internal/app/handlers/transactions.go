@@ -3,7 +3,6 @@ package handlers
 import (
 	"errors"
 	"fmt"
-	"math/big"
 	"net/http"
 	"strconv"
 	"time"
@@ -13,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/nighostchris/everytrack-backend/internal/database"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
@@ -39,7 +39,7 @@ type CreateNewTransactionRequestBody struct {
 	Amount     string `json:"amount" validate:"required"`
 	Remarks    string `json:"remarks"`
 	Category   string `json:"category" validate:"required"`
-	AccountId  string `json:"accountId"`
+	AccountId  string `json:"accountId" validate:"required"`
 	CurrencyId string `json:"currencyId" validate:"required"`
 	ExecutedAt int64  `json:"executedAt" validate:"required"`
 }
@@ -133,6 +133,7 @@ func (th *TransactionsHandler) CreateNewTransaction(c echo.Context) error {
 		Amount:     data.Amount,
 		ClientId:   clientId,
 		Category:   data.Category,
+		AccountId:  data.AccountId,
 		CurrencyId: data.CurrencyId,
 		ExecutedAt: time.Unix(data.ExecutedAt, 0),
 	}
@@ -140,87 +141,71 @@ func (th *TransactionsHandler) CreateNewTransaction(c echo.Context) error {
 	if len(data.Remarks) != 0 {
 		createNewTransactionDbParams.Remarks = &data.Remarks
 	}
-	if len(data.AccountId) != 0 {
-		createNewTransactionDbParams.AccountId = &data.AccountId
-	}
 	th.Logger.Debug(fmt.Sprintf("constructed parameters for create new transaction database query - %#v", createNewTransactionDbParams))
 
-	// Check if there is enough balance to consume when accountId is not empty and the request is an expense
-	if createNewTransactionDbParams.AccountId != nil {
-		accountBalance, getAccountBalanceError := database.GetAccountBalance(th.Db, *createNewTransactionDbParams.AccountId)
-		if getAccountBalanceError != nil {
-			th.Logger.Error(
-				fmt.Sprintf(
-					"failed to get account balance for %s from database. %s",
-					*createNewTransactionDbParams.AccountId,
-					getAccountBalanceError.Error(),
-				),
-				requestId,
-			)
-			return c.JSON(
-				http.StatusInternalServerError,
-				LooseJson{"success": false, "error": "Internal server error."},
-			)
-		}
-
-		// Converting balance to float number
-		balanceInFloat, parseBalanceError := strconv.ParseFloat(accountBalance, 64)
-		if parseBalanceError != nil {
-			th.Logger.Error(fmt.Sprintf("failed to parse balance into float. %s", parseBalanceError.Error()), requestId)
-			return c.JSON(
-				http.StatusInternalServerError,
-				LooseJson{"success": false, "error": "Internal server error."},
-			)
-		}
-
-		// Converting amount to float number
-		amountInFloat, parseAmountError := strconv.ParseFloat(data.Amount, 64)
-		if parseAmountError != nil {
-			th.Logger.Error(fmt.Sprintf("failed to parse amount into float. %s", parseAmountError.Error()), requestId)
-			return c.JSON(
-				http.StatusInternalServerError,
-				LooseJson{"success": false, "error": "Internal server error."},
-			)
-		}
-
-		// Compare balance with amount
-		balanceComparison := big.NewFloat(amountInFloat).Cmp(big.NewFloat(balanceInFloat))
-		if balanceComparison == 1 && !income {
-			return c.JSON(
-				http.StatusBadRequest,
-				LooseJson{"success": false, "error": "Insufficient account balance."},
-			)
-		}
-		th.Logger.Debug(
-			fmt.Sprintf("sufficient balance in account %s to pay the transaction amount", *createNewTransactionDbParams.AccountId),
+	// Get original account balance
+	accountBalance, getAccountBalanceError := database.GetAccountBalance(th.Db, createNewTransactionDbParams.AccountId)
+	if getAccountBalanceError != nil {
+		th.Logger.Error(
+			fmt.Sprintf(
+				"failed to get account balance for %s from database. %s",
+				createNewTransactionDbParams.AccountId,
+				getAccountBalanceError.Error(),
+			),
 			requestId,
 		)
-
-		// Calculate the final account balance after receiving / spending the transaction amount
-		var amount *big.Float
-		if income {
-			amount = big.NewFloat(amountInFloat)
-		} else {
-			amount = big.NewFloat(0).Neg(big.NewFloat(amountInFloat))
-		}
-		newAccountBalance := big.NewFloat(0).Add(big.NewFloat((balanceInFloat)), amount)
-		newAccountBalanceInFloat, _ := newAccountBalance.Float64()
-
-		_, updateAccountBalanceError := database.UpdateAccountBalance(
-			th.Db,
-			strconv.FormatFloat(newAccountBalanceInFloat, 'f', -1, 64),
-			*createNewTransactionDbParams.AccountId,
+		return c.JSON(
+			http.StatusInternalServerError,
+			LooseJson{"success": false, "error": "Internal server error."},
 		)
-		if updateAccountBalanceError != nil {
-			th.Logger.Error(
-				fmt.Sprintf("failed to update latest balance after deducting transaction amount. %s", updateAccountBalanceError.Error()),
-				requestId,
-			)
-			return c.JSON(
-				http.StatusInternalServerError,
-				LooseJson{"success": false, "error": "Internal server error."},
-			)
-		}
+	}
+
+	// Converting balance to decimal
+	balanceInDecimal, parseBalanceError := decimal.NewFromString(accountBalance)
+	if parseBalanceError != nil {
+		th.Logger.Error(fmt.Sprintf("failed to parse balance into decimal. %s", parseBalanceError.Error()), requestId)
+		return c.JSON(
+			http.StatusInternalServerError,
+			LooseJson{"success": false, "error": "Internal server error."},
+		)
+	}
+
+	// Converting amount to decimal
+	amountInDecimal, parseAmountError := decimal.NewFromString(data.Amount)
+	if parseAmountError != nil {
+		th.Logger.Error(fmt.Sprintf("failed to parse amount into decimal. %s", parseAmountError.Error()), requestId)
+		return c.JSON(
+			http.StatusInternalServerError,
+			LooseJson{"success": false, "error": "Internal server error."},
+		)
+	}
+
+	// Calculate the final account balance after receiving / spending the transaction amount
+	var newAccountBalance decimal.Decimal
+	if income {
+		newAccountBalance = balanceInDecimal.Add(amountInDecimal)
+	} else {
+		newAccountBalance = balanceInDecimal.Sub(amountInDecimal)
+	}
+	th.Logger.Debug(
+		fmt.Sprintf("account balance for %s will go from %s to %s", createNewTransactionDbParams.AccountId, accountBalance, newAccountBalance.Truncate(2).String()),
+		requestId,
+	)
+
+	_, updateAccountBalanceError := database.UpdateAccountBalance(
+		th.Db,
+		newAccountBalance.Truncate(2).String(),
+		createNewTransactionDbParams.AccountId,
+	)
+	if updateAccountBalanceError != nil {
+		th.Logger.Error(
+			fmt.Sprintf("failed to update latest balance after deducting transaction amount. %s", updateAccountBalanceError.Error()),
+			requestId,
+		)
+		return c.JSON(
+			http.StatusInternalServerError,
+			LooseJson{"success": false, "error": "Internal server error."},
+		)
 	}
 	th.Logger.Debug("going to create new transaction record in database")
 
@@ -254,77 +239,65 @@ func (th *TransactionsHandler) DeleteTransaction(c echo.Context) error {
 			LooseJson{"success": false, "error": "Undefined transaction id."},
 		)
 	}
-	revertBalanceString := c.QueryParam("revertBalance")
-	if len(revertBalanceString) > 0 {
-		revertBalance, parseBooleanError := strconv.ParseBool(revertBalanceString)
-		if parseBooleanError != nil {
-			return c.JSON(
-				http.StatusBadRequest,
-				LooseJson{"success": false, "error": "Invalid query parameters."},
-			)
-		}
 
-		if revertBalance {
-			transactionAndBalance, getTransactionAndBalanceError := database.GetTransactionAndAccountBalanceById(th.Db, transactionId)
-			if getTransactionAndBalanceError != nil {
-				th.Logger.Error(
-					fmt.Sprintf("failed to get transaction and balance from database. %s", getTransactionAndBalanceError.Error()),
-					requestId,
-				)
-				return c.JSON(
-					http.StatusInternalServerError,
-					LooseJson{"success": false, "error": "Internal server error."},
-				)
-			}
+	transactionAndBalance, getTransactionAndBalanceError := database.GetTransactionAndAccountBalanceById(th.Db, transactionId)
+	if getTransactionAndBalanceError != nil {
+		th.Logger.Error(
+			fmt.Sprintf("failed to get transaction and balance from database. %s", getTransactionAndBalanceError.Error()),
+			requestId,
+		)
+		return c.JSON(
+			http.StatusInternalServerError,
+			LooseJson{"success": false, "error": "Internal server error."},
+		)
+	}
 
-			// Converting balance to float number
-			balanceInFloat, parseBalanceError := strconv.ParseFloat(transactionAndBalance.Balance, 64)
-			if parseBalanceError != nil {
-				th.Logger.Error(fmt.Sprintf("failed to parse balance into float. %s", parseBalanceError.Error()), requestId)
-				return c.JSON(
-					http.StatusInternalServerError,
-					LooseJson{"success": false, "error": "Internal server error."},
-				)
-			}
+	// Converting balance to decimal
+	balanceInDecimal, parseBalanceError := decimal.NewFromString(transactionAndBalance.Balance)
+	if parseBalanceError != nil {
+		th.Logger.Error(fmt.Sprintf("failed to parse balance into decimal. %s", parseBalanceError.Error()), requestId)
+		return c.JSON(
+			http.StatusInternalServerError,
+			LooseJson{"success": false, "error": "Internal server error."},
+		)
+	}
 
-			// Converting amount to float number
-			amountInFloat, parseAmountError := strconv.ParseFloat(transactionAndBalance.Amount, 64)
-			if parseAmountError != nil {
-				th.Logger.Error(fmt.Sprintf("failed to parse amount into float. %s", parseAmountError.Error()), requestId)
-				return c.JSON(
-					http.StatusInternalServerError,
-					LooseJson{"success": false, "error": "Internal server error."},
-				)
-			}
+	// Converting amount to decimal
+	amountInDecimal, parseAmountError := decimal.NewFromString(transactionAndBalance.Amount)
+	if parseAmountError != nil {
+		th.Logger.Error(fmt.Sprintf("failed to parse amount into decimal. %s", parseAmountError.Error()), requestId)
+		return c.JSON(
+			http.StatusInternalServerError,
+			LooseJson{"success": false, "error": "Internal server error."},
+		)
+	}
 
-			// Calculate the final account balance after reverting the transaction amount
-			var amount *big.Float
-			if transactionAndBalance.Income {
-				amount = big.NewFloat(0).Neg(big.NewFloat(amountInFloat))
-			} else {
-				amount = big.NewFloat(amountInFloat)
-			}
-			newAccountBalance, _ := big.NewFloat(0).Add(
-				big.NewFloat((balanceInFloat)),
-				amount,
-			).Float64()
+	// Calculate the final account balance after reverting the transaction amount
+	var newAccountBalance decimal.Decimal
+	if transactionAndBalance.Income {
+		newAccountBalance = balanceInDecimal.Sub(amountInDecimal)
+	} else {
+		newAccountBalance = balanceInDecimal.Add(amountInDecimal)
+	}
+	th.Logger.Debug(
+		fmt.Sprintf("account balance for %s will go from %s to %s", transactionAndBalance.AccountId, transactionAndBalance.Balance, newAccountBalance.Truncate(2).String()),
+		requestId,
+	)
 
-			_, updateAccountBalanceError := database.UpdateAccountBalance(
-				th.Db,
-				strconv.FormatFloat(newAccountBalance, 'f', -1, 64),
-				transactionAndBalance.AccountId,
-			)
-			if updateAccountBalanceError != nil {
-				th.Logger.Error(
-					fmt.Sprintf("failed to update latest balance after reverting transaction amount. %s", updateAccountBalanceError.Error()),
-					requestId,
-				)
-				return c.JSON(
-					http.StatusInternalServerError,
-					LooseJson{"success": false, "error": "Internal server error."},
-				)
-			}
-		}
+	_, updateAccountBalanceError := database.UpdateAccountBalance(
+		th.Db,
+		newAccountBalance.Truncate(2).String(),
+		transactionAndBalance.AccountId,
+	)
+	if updateAccountBalanceError != nil {
+		th.Logger.Error(
+			fmt.Sprintf("failed to update latest balance after reverting transaction amount. %s", updateAccountBalanceError.Error()),
+			requestId,
+		)
+		return c.JSON(
+			http.StatusInternalServerError,
+			LooseJson{"success": false, "error": "Internal server error."},
+		)
 	}
 
 	// Delete transaction record in database

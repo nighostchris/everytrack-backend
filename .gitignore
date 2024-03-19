@@ -28,6 +28,3 @@ go.work
 
 # Hot reload directory
 tmp/
-
-# Node modules
-node_modules/

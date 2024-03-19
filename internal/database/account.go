@@ -6,6 +6,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type AccountDetails struct {
+	Name       string `json:"name"`
+	Balance    string `json:"balance"`
+	CurrencyId string `json:"currencyId"`
+}
+
 type AccountSummary struct {
 	Id              string `json:"id"`
 	Name            string `json:"name"`
@@ -77,6 +83,21 @@ func GetAccountBalance(db *pgxpool.Pool, accountId string) (string, error) {
 	}
 
 	return balance, nil
+}
+
+func GetAccountSummary(db *pgxpool.Pool, accountId string) (AccountSummary, error) {
+	var summary AccountSummary
+	getAccountSummaryQuery := `SELECT a.id, apat.name, a.balance, a.currency_id, a.asset_provider_account_type_id, ap.id as asset_provider_id
+	FROM everytrack_backend.account AS a
+	INNER JOIN everytrack_backend.asset_provider_account_type AS apat ON a.asset_provider_account_type_id = apat.id
+	INNER JOIN everytrack_backend.asset_provider AS ap ON apat.asset_provider_id = ap.id
+	WHERE a.id = $1;`
+	getAccountSummaryError := db.QueryRow(context.Background(), getAccountSummaryQuery, accountId).Scan(&summary.Id, &summary.Name, &summary.Balance, &summary.CurrencyId, &summary.AccountTypeId, &summary.AssetProviderId)
+	if getAccountSummaryError != nil {
+		return summary, getAccountSummaryError
+	}
+
+	return summary, nil
 }
 
 func CheckExistingAccount(db *pgxpool.Pool, params CheckExistingAccountParams) (bool, error) {
